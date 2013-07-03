@@ -11,8 +11,8 @@ def feedstoprocess(limit=1):
     feeds = db.select('feeds', order='lastupdate ASC', limit=limit)
     return feeds
 
-def lastupdate(fid):
-    result = db.select('items', what="MAX(published) AS published", where="fid=$fid", vars={'fid': fid})[0].published
+def lastupdate(feed_id):
+    result = db.select('items', what="MAX(published) AS published", where="feed_id=$feed_id", vars={'feed_id': feed_id})[0].published
     if result:
         return result
     else:
@@ -21,50 +21,45 @@ def lastupdate(fid):
 for feed in feedstoprocess():
     result = feedparser.parse(feed.url)
     db.update('feeds',
-              where="fid=$fid",
-              title=result.feed.title,
-              vars={'fid': feed.fid})
+              where="feed_id=$feed_id",
+              feed_title=result.feed.title,
+              vars={'feed_id': feed.feed_id})
     for entry in result.entries:
         published = timegm(entry.published_parsed)
         updated = timegm(entry.updated_parsed)
-        storecontent = False
+        content = None
+        if entry.description:
+            content = entry.description
+        try:
+            for c in entry.content:
+                if content:
+                    content+=c.value
+                else:
+                    content=c.value
+        except AttributeError:
+            #Not an atom feed
+            pass
         try:
             item = db.select('items',
-                             where="fid=$fid AND guid=$guid",
-                             vars={'fid': feed.fid, 'guid': entry.id})[0]
+                             where="feed_id=$feed_id AND guid=$guid",
+                             vars={'feed_id': feed.feed_id, 'guid': entry.id})[0]
+            item_id = item.item_id
             if updated > item.updated:
                 db.update('items',
-                          where="iid=$iid",
+                          where="guid=$guid",
                           title=entry.title,
                           description=entry.description,
                           published=published,
                           updated=updated,
-                          vars={'iid': item.iid})
-                storecontent = True
+                          content=content,
+                          vars={'guid': entry.id})
         except IndexError:
-            db.insert('items',
-                      fid=feed.fid,
-                      title=entry.title,
-                      description=entry.description,
-                      published=published,
-                      updated=updated,
-                      guid=entry.id)
-            item = db.select('items',
-                             what='iid',
-                             where="fid=$fid AND guid=$guid",
-                             vars={'fid': feed.fid, 'guid': entry.id})[0]
-            storecontent = True
-        if storecontent:
-            try:
-                cid=0
-                db.delete('content',
-                          where="iid=$iid",
-                          vars={'iid': item.iid})
-                for content in entry.content:
-                    db.insert('content', iid=item.iid, cid=cid, value=content.value, contenttype=content.type)
-                    cid += 1
-            except AttributeError:
-                # Guess not an atom feed.
-                pass
-
-    db.update('feeds', where="fid=$fid", vars={'fid': feed.fid}, lastupdate=timegm(gmtime()))
+            item_id = db.insert('items',
+                                feed_id=feed.feed_id,
+                                title=entry.title,
+                                description=entry.description,
+                                published=published,
+                                updated=updated,
+                                content=content,
+                                guid=entry.id)
+    db.update('feeds', where="feed_id=$feed_id", vars={'feed_id': feed.feed_id}, lastupdate=timegm(gmtime()))
