@@ -195,7 +195,8 @@ def getCategories(jsoninput=None):
         
     if jsoninput['enable_nested']:
         categories = db.select('categories',
-                               where="""user_id=$user_id""",
+                               where="""user_id=$user_id
+                                        AND parent IS NULL""",
                                vars={'user_id': user_id})
     else:
         categories = db.select('categories',
@@ -216,7 +217,7 @@ def getCategories(jsoninput=None):
         if jsoninput['unread_only'] and not unread:
             continue
         result.append({'id': category.cat_id,
-                       'name': category.name,
+                       'title': category.name,
                        'unread': unread,
                        'order_id': order_id})
         order_id += 1
