@@ -195,8 +195,7 @@ def getCategories(jsoninput=None):
         
     if jsoninput['enable_nested']:
         categories = db.select('categories',
-                               where="""user_id=$user_id
-                                        AND parent=cat_id""",
+                               where="""user_id=$user_id""",
                                vars={'user_id': user_id})
     else:
         categories = db.select('categories',
@@ -299,6 +298,13 @@ def getArticle(jsoninput=None):
                              vars={'item_id': item_id})[0]
             articles.append(article(item))
     return articles
+
+def subscribeToFeed(jsoninput=None):
+    user_id = checksid(jsoninput['sid'])
+    feed_url = jsoninput['feed_url']
+    #TODO: cat_id
+    db.insert('feeds', url=feed_url, user_id=user_id, cat_id=0)
+
                             
 #TODO: getConfig
 #TODO: updateFeed
@@ -308,7 +314,6 @@ def getArticle(jsoninput=None):
 #TODO: getLabels 1
 #TODO: setArticleLabel 1
 #TODO: shareToPublished 4
-#TODO: subscribeToFeed 5
 #TODO: unsubscribeFeed 5
 #TODO: getFeedTree 5
 
@@ -325,6 +330,7 @@ apifunctions = {'getApiLevel': getApiLevel,
                 'updateArticle': updateArticle,
                 'getArticle': getArticle,
                 'getCategories': getCategories,
+                'subscribeToFeed': subscribeToFeed,
                }
 
 class api:

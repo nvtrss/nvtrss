@@ -7,7 +7,9 @@ DROP TABLE IF EXISTS users;
 CREATE TABLE categories (cat_id INTEGER PRIMARY KEY AUTOINCREMENT,
                          name,
                          parent,
-                         FOREIGN KEY(parent) REFERENCES categories(cat_id) ON DELETE CASCADE
+                         user_id,
+                         FOREIGN KEY(parent) REFERENCES categories(cat_id) ON DELETE CASCADE,
+                         FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE
                         );
 
 CREATE TABLE categories_feeds (cat_id,
