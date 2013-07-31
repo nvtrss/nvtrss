@@ -106,7 +106,7 @@ def isLoggedIn(jsoninput=None):
             return {"status":False}
     raise SessionError("No sessiond specified.", jsoninput['sid'])
 
-def countunread(user_id, feed_id=None):
+def countunread(user_id, feed_id=None, uncategorised=False):
     #TODO: freshness... younger than date?
     SQL = """select count() as count from items
              join feeds
@@ -117,6 +117,8 @@ def countunread(user_id, feed_id=None):
     if feed_id:
         SQL += str(" and feeds.feed_id=$feed_id")
         variables['feed_id'] = feed_id
+    if uncategorised:
+        SQL += str(" and feeds.cat_id IS NULL")
     result = db.query(SQL, vars=variables)[0].count
     return result
 
@@ -144,38 +146,54 @@ def getFeeds(jsoninput=None):
     query = """select * from feeds
                where user_id=$user_id"""
     variables = {'user_id': user_id}
+    if 'cat_id' in jsoninput:
+        cat_id = int(jsoninput['cat_id'])
+        if cat_id == -4:
+            pass
+        elif cat_id == 0:
+            query += " and feeds.cat_id IS NULL"
+        else: # TODO: -1, -2, -3?
+            query += " and cat_id=$cat_id"
+            variables['cat_id'] = cat_id
+    else:
+        cat_id = None
     # Splice?
     if 'limit' in jsoninput:
         variables['limit'] = int(jsoninput['limit'])
         query += " limit $limit"
-    result = db.query(query, vars=variables)
-    if 'offset' in jsoninput:
-        offset = int(jsoninput['offset'])
-    else:
-        offset = 0
     feeds = []
-    #TODO: feeds order_id
-    order_id = 0
-    for feed in result:
-        unread = countunread(user_id, feed.feed_id)
-        feeds.append({'feed_url': feed.url,
-                      'title': feed.feed_title,
-                      'id': feed.feed_id,
-                      'unread': unread,
-                      #TODO: favicon support
-                      'has_icon': True,
-                      'cat_id': feed.cat_id,
-                      'last_updated': feed.lastupdate,
-                      'order_id': order_id})
-        order_id += 1
-    feeds.append({'id': -4,
-                 'title': "All articles",
-                 'unread': countunread(user_id),
-                 'cat_id': -1})
-    feeds.append({'id': -3,
-                  'title': "Fresh articles",
-                  'unread': 0, #FIXME,
-                  'cat_id': -1})
+    if cat_id == -1:
+        # We only want specials...
+        pass
+    else:
+        result = db.query(query, vars=variables)
+        if 'offset' in jsoninput:
+            offset = int(jsoninput['offset'])
+        else:
+            offset = 0
+        #TODO: feeds order_id
+        order_id = 0
+        for feed in result:
+            unread = countunread(user_id, feed.feed_id)
+            feeds.append({'feed_url': feed.url,
+                          'title': feed.feed_title,
+                          'id': feed.feed_id,
+                          'unread': unread,
+                          #TODO: favicon support
+                          'has_icon': True,
+                          'cat_id': feed.cat_id,
+                          'last_updated': feed.lastupdate,
+                          'order_id': order_id})
+            order_id += 1
+    if not cat_id or cat_id == -1 or cat_id == -4:
+        feeds.append({'id': -4,
+                     'title': "All articles",
+                     'unread': countunread(user_id),
+                     'cat_id': -1})
+        feeds.append({'id': -3,
+                      'title': "Fresh articles",
+                      'unread': 0, #FIXME,
+                      'cat_id': -1})
     return feeds
 
 def parse_jsoninput(jsoninput, options):
@@ -203,6 +221,14 @@ def getCategories(jsoninput=None):
                                where="user_id=$user_id",
                                vars={'user_id': user_id})
     result = []
+    result.append({'id': -1,
+                  'title': "Special",
+                  'unread': countunread(user_id),
+                  'cat_id': -1})
+    result.append({'id': 0,
+                  'title': "Uncategorised",
+                  'unread': countunread(user_id, uncategorised=True),
+                  'cat_id': -0})
     #TODO: order_id
     order_id = 0
     for category in categories:
