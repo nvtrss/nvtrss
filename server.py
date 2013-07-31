@@ -4,6 +4,7 @@ import web
 import json
 
 from time import time
+from datetime import datetime, timedelta
 
 version = "0.0.1"
 api_level = -1
@@ -106,7 +107,11 @@ def isLoggedIn(jsoninput=None):
             return {"status":False}
     raise SessionError("No sessiond specified.", jsoninput['sid'])
 
-def countunread(user_id, feed_id=None, uncategorised=False):
+def freshcutoff():
+    threshold = timedelta(hours=3) #better value?
+    return int((datetime.utcnow() - threshold).strftime('%s')) #FIXME: ewww.
+
+def countunread(user_id, feed_id=None, uncategorised=False, fresh=False):
     #TODO: freshness... younger than date?
     SQL = """select count() as count from items
              join feeds
@@ -119,6 +124,9 @@ def countunread(user_id, feed_id=None, uncategorised=False):
         variables['feed_id'] = feed_id
     if uncategorised:
         SQL += str(" and feeds.cat_id IS NULL")
+    if fresh:
+        SQL += str(" and items.published > $published")
+        variables['published'] = freshcutoff()
     result = db.query(SQL, vars=variables)[0].count
     return result
 
@@ -192,7 +200,7 @@ def getFeeds(jsoninput=None):
                      'cat_id': -1})
         feeds.append({'id': -3,
                       'title': "Fresh articles",
-                      'unread': 0, #FIXME,
+                      'unread': countunread(user_id, fresh=True),
                       'cat_id': -1})
     return feeds
 
@@ -267,6 +275,9 @@ def getHeadlines(jsoninput=None):
         elif feed_id == 0: # TODO: all the others...
             # FIXME: uncategorized or archived? Unclear
             query += str(" and feeds.cat_id IS NULL")
+        elif feed_id == -3: #fresh only
+            query += str(" and items.published > $published")
+            variables['published'] = freshcutoff()
     if 'limit' in jsoninput and jsoninput['limit'] < 201:
         variables['limit'] = int(jsoninput['limit'])
     else:
