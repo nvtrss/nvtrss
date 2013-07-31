@@ -12,12 +12,6 @@ CREATE TABLE categories (cat_id INTEGER PRIMARY KEY AUTOINCREMENT,
                          FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE
                         );
 
-CREATE TABLE categories_feeds (cat_id,
-                               feed_id PRIMARY KEY,
-                               FOREIGN KEY(feed_id) REFERENCES feeds(feed_id) ON DELETE CASCADE,
-                               FOREIGN KEY(cat_id) REFERENCES categories(cat_id) ON DELETE CASCADE
-                              );
-
 CREATE TABLE feeds (feed_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     url,
                     lastupdate,
@@ -26,9 +20,6 @@ CREATE TABLE feeds (feed_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user_id,
                     FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE
                    );
-
-INSERT INTO feeds (url, user_id, cat_id) values('http://rss.slashdot.org/Slashdot/slashdot', 1, 1);
-INSERT INTO feeds (url, user_id, cat_id) values('http://feeds.arstechnica.com/arstechnica/index?format=xml', 1, 1);
 
 CREATE TABLE items (feed_id,
                     title,
@@ -42,4 +33,9 @@ CREATE TABLE items (feed_id,
                     FOREIGN KEY(feed_id) REFERENCES feeds(feed_id) ON DELETE CASCADE
                    );
 
-CREATE TABLE users (user_id);
+CREATE TABLE users (user_id, username);
+
+INSERT INTO users (user_id, username) values(1, 'admin');
+INSERT INTO categories (name, user_id) values('Example First Category', 1);
+INSERT INTO feeds (url, feed_id, user_id) values('http://rss.slashdot.org/Slashdot/slashdot', 1, 1);
+INSERT INTO feeds (url, feed_id, cat_id, user_id) values('http://feeds.arstechnica.com/arstechnica/index?format=xml', 2, 1, 1);
