@@ -185,7 +185,7 @@ def getFeeds(jsoninput=None):
                           'last_updated': feed.lastupdate,
                           'order_id': order_id})
             order_id += 1
-    if not cat_id or cat_id == -1 or cat_id == -4:
+    if cat_id is None or cat_id == -1 or cat_id == -4:
         feeds.append({'id': -4,
                      'title': "All articles",
                      'unread': countunread(user_id),
@@ -260,8 +260,13 @@ def getHeadlines(jsoninput=None):
                where feeds.user_id=$user_id"""
     variables = {'user_id': user_id}
     if 'feed_id' in jsoninput:
-        variables['feed_id'] = int(jsoninput['feed_id'])
-        query += str(" and items.feed_id=$feed_id")
+        feed_id = int(jsoninput['feed_id'])
+        if feed_id > 0:
+            variables['feed_id'] = int(jsoninput['feed_id'])
+            query += str(" and items.feed_id=$feed_id")
+        elif feed_id == 0: # TODO: all the others...
+            # FIXME: uncategorized or archived? Unclear
+            query += str(" and feeds.cat_id IS NULL")
     if 'limit' in jsoninput and jsoninput['limit'] < 201:
         variables['limit'] = int(jsoninput['limit'])
     else:
