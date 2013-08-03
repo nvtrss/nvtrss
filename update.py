@@ -2,8 +2,9 @@
 
 import web
 import feedparser
-from time import gmtime
-from calendar import timegm
+
+from time import mktime
+from datetime import datetime
 
 db = web.database(dbn='sqlite', db='database.db')
 
@@ -25,8 +26,9 @@ for feed in feedstoprocess():
               feed_title=result.feed.title,
               vars={'feed_id': feed.feed_id})
     for entry in result.entries:
-        published = timegm(entry.published_parsed)
-        updated = timegm(entry.updated_parsed)
+        print entry.published_parsed
+        published = datetime.fromtimestamp(mktime(entry.published_parsed))
+        updated = datetime.fromtimestamp(mktime(entry.updated_parsed))
         content = None
         if entry.description:
             content = entry.description
@@ -62,4 +64,4 @@ for feed in feedstoprocess():
                                 updated=updated,
                                 content=content,
                                 guid=entry.id)
-    db.update('feeds', where="feed_id=$feed_id", vars={'feed_id': feed.feed_id}, lastupdate=timegm(gmtime()))
+    db.update('feeds', where="feed_id=$feed_id", vars={'feed_id': feed.feed_id}, lastupdate=datetime.utcnow())

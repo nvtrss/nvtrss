@@ -4,7 +4,6 @@ import web
 import json
 import uuid
 
-from time import time
 from datetime import datetime, timedelta
 
 version = "0.0.1"
@@ -162,7 +161,7 @@ def article(row):
     return {'id': row.item_id,
             'feed_id': row.feed_id,
             'unread': not bool(row.read),
-            'updated': row.updated,
+            'updated': row.updated.strftime('%s'),
             'title': row.title,
             'link': row.guid,
             'feed_title': row.feed_title,
@@ -338,7 +337,7 @@ def updateArticle(jsoninput=None):
             if mode == 0:
                 if field == 2:
                     # parameter is 'unread' but we store read so negate:
-                    real_mode = time()
+                    real_mode = datetime.utcnow()
                 else:
                     real_mode = None
             elif mode == 1:
@@ -346,7 +345,7 @@ def updateArticle(jsoninput=None):
                     # parameter is 'unread' but we store read so negate:
                     real_mode = None
                 else:
-                    real_mode = time()
+                    real_mode = datetime.utcnow()
             elif mode == 2:
                 if db.select('items',
                              where='item_id=$item_id',
@@ -354,7 +353,7 @@ def updateArticle(jsoninput=None):
                              vars={'item_id': item_id}):
                     real_mode = None
                 else:
-                    real_mode = time()
+                    real_mode = datetime.utcnow()
             db.query('update items set %s=$mode where item_id=$item_id' % (item_fields[field],),
                      vars={'mode': real_mode, 'item_id': item_id})
             count += 1

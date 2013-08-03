@@ -23,13 +23,14 @@ CREATE TABLE feeds (feed_id INTEGER PRIMARY KEY AUTOINCREMENT,
                    );
 
 CREATE TABLE items (feed_id,
+                    guid,
                     title,
                     description,
                     content,
-                    published,
-                    updated,
-                    guid,
-                    read,
+                    published timestamp,
+                    updated timestamp,
+                    read timestamp,
+                    starred timestamp,
                     item_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     FOREIGN KEY(feed_id) REFERENCES feeds(feed_id) ON DELETE CASCADE
                    );
