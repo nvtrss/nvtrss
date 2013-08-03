@@ -3,6 +3,7 @@ DROP TABLE IF EXISTS categories_feeds;
 DROP TABLE IF EXISTS feeds;
 DROP TABLE IF EXISTS items;
 DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS sessions;
 
 CREATE TABLE categories (cat_id INTEGER PRIMARY KEY AUTOINCREMENT,
                          name,
@@ -34,6 +35,12 @@ CREATE TABLE items (feed_id,
                    );
 
 CREATE TABLE users (user_id, username);
+
+CREATE TABLE sessions (user_id,
+                       sid,
+                       lastused timestamp,
+                       FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE
+                      );
 
 INSERT INTO users (user_id, username) values(1, 'admin');
 INSERT INTO categories (name, user_id) values('Example First Category', 1);

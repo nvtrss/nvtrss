@@ -2,6 +2,7 @@
 
 import web
 import json
+import uuid
 
 from time import time
 from datetime import datetime, timedelta
@@ -42,6 +43,7 @@ class SessionError(ApiError):
     def __str__(self):
         return repr(self.msg)
 
+
 class OwnershipError(SessionError):
     """Raised when session id is not valid for item."""
     def __init__(self, msg, sid=None, item_id=None):
@@ -54,11 +56,20 @@ class OwnershipError(SessionError):
 
 
 
-def checksid(sid, raise_exception=True):
+def checksession(sid, raise_exception=True):
     """Checks for valid sid and returns user_id."""
-    #TODO: checksid
-    if sid == "12345":
-        return 1
+    try:
+        session = db.select('sessions',
+                            where="sid=$sid",
+                            vars={'sid': sid})[0]
+    #TODO: cleanup...
+    except IndexError:
+        if raise_exception:
+            raise SessionError("Not a valid session", sid)
+        else:
+            return False
+    if session.lastused > datetime.utcnow() - timedelta(hours=1):
+        return True
     else:
         if raise_exception:
             raise SessionError("Not a valid session", sid)
@@ -80,28 +91,45 @@ def ownerofitem(item_id):
 ##
 
 def getApiLevel(jsoninput=None):
-    checksid(jsoninput['sid'])
+    checksession(jsoninput['sid'])
     return {'level': api_level}
 
 def getVersion(jsoninput=None):
-    checksid(jsoninput['sid'])
+    checksession(jsoninput['sid'])
     return {'version': version}
 
 def login(jsoninput=None):
     #TODO: session handling
-    return {'session_id': "12345",
+    try:
+        user_id = db.select('users',
+                            what='user_id',
+                            where="username=$username",
+                            vars={'username': jsoninput['user']}
+                            )[0].user_id
+    except IndexError:
+        raise ApiError("LOGIN_ERROR")
+    sid = uuid.uuid1().hex
+    db.insert('sessions',
+              sid=sid,
+              user_id=user_id,
+              lastused=datetime.utcnow())
+    return {'session_id': sid,
             'api_level': api_level}
 
 def logout(jsoninput=None):
     if 'sid' in jsoninput:
-        if checksid(jsoninput['sid']):
+        sid = jsoninput['sid']
+        if checksession(sid):
             #TODO: logout
+            db.delete('sessions',
+                      where="sid=$sid",
+                      vars={'sid': sid})
             return {"status":"OK"}
     return {"status": "false"}
 
 def isLoggedIn(jsoninput=None):
     if 'sid' in jsoninput:
-        if checksid(jsoninput['sid'], False):
+        if checksession(jsoninput['sid'], False):
             return {"status":True}
         else:
             return {"status":False}
@@ -144,12 +172,12 @@ def article(row):
 
 
 def getUnread(jsoninput=None):
-    user_id = checksid(jsoninput['sid'])
+    user_id = checksession(jsoninput['sid'])
     result = countunread(user_id)
     return {'unread':str(result)}
 
 def getFeeds(jsoninput=None):
-    user_id = checksid(jsoninput['sid'])
+    user_id = checksession(jsoninput['sid'])
     #TODO: parameters: cat_id, unread_only, offset, include_nested
     query = """select * from feeds
                where user_id=$user_id"""
@@ -215,7 +243,7 @@ def parse_jsoninput(jsoninput, options):
 
 def getCategories(jsoninput=None):
     # TODO: parameters: include_empty
-    user_id = checksid(jsoninput['sid'])
+    user_id = checksession(jsoninput['sid'])
     options = ['unread_only', 'enable_nested', 'include_empty']
     jsoninput = parse_jsoninput(jsoninput, options)
         
@@ -261,7 +289,7 @@ def getCategories(jsoninput=None):
 def getHeadlines(jsoninput=None):
     #TODO: parameters: skip, is_cat, show_excerpt, show_content, view_mode
     #TODO: parameters: include_attachments, since_id, include_nested, order_by
-    user_id = checksid(jsoninput['sid'])
+    user_id = checksession(jsoninput['sid'])
     query = """select * from items
                join feeds
                  on feeds.feed_id=items.feed_id
@@ -295,8 +323,11 @@ item_fields = ['starred', 'published', 'read'] # TODO: article?!
 
 def updateArticle(jsoninput=None):
     #TODO: all
-    user_id = checksid(jsoninput['sid'])
-    article_ids = jsoninput['article_ids'].split(',')
+    user_id = checksession(jsoninput['sid'])
+    try:
+        article_ids = jsoninput['article_ids'].split(',')
+    except AttributeError:
+        article_ids = [jsoninput['article_ids'], ]
     mode = int(jsoninput['mode'])
     field = int(jsoninput['field'])
     result = []
@@ -331,7 +362,7 @@ def updateArticle(jsoninput=None):
             raise OwnershipError("Not a valid session for article.", user_id, item_id)
 
 def getArticle(jsoninput=None):
-    user_id = checksid(jsoninput['sid'])
+    user_id = checksession(jsoninput['sid'])
     article_ids = jsoninput['article_id'].split(',')
     articles = []
     for item_id in article_ids:
@@ -343,7 +374,7 @@ def getArticle(jsoninput=None):
     return articles
 
 def subscribeToFeed(jsoninput=None):
-    user_id = checksid(jsoninput['sid'])
+    user_id = checksession(jsoninput['sid'])
     feed_url = jsoninput['feed_url']
     #TODO: cat_id
     db.insert('feeds', url=feed_url, user_id=user_id, cat_id=0)
@@ -378,7 +409,7 @@ apifunctions = {'getApiLevel': getApiLevel,
 
 class api:
     def POST(self):
-        print web.data()
+        print "input=%s" % web.data()
         jsoninput = json.loads(web.data())
         output = {}
         # FIXME: seq in docs is shown as url parameter?
@@ -404,10 +435,11 @@ class api:
                 output['content'] = {'error': 'NOT_LOGGED_IN'}
             except ApiError, e:
                 output['status'] = 1
-                output['content'] = {'error': str(e)}
+                output['content'] = {'error': e.msg}
         else:
             output['status'] = 1
             
+        print "output=%s" % json.dumps(output)
         return json.dumps(output)
             
         
