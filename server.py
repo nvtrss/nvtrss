@@ -55,7 +55,7 @@ class OwnershipError(SessionError):
 
 
 
-def checksession(sid, raise_exception=True):
+def checksession(sid):
     """Checks for valid sid and returns user_id."""
     try:
         session = db.select('sessions',
@@ -63,10 +63,7 @@ def checksession(sid, raise_exception=True):
                             vars={'sid': sid})[0]
     #TODO: cleanup...
     except IndexError:
-        if raise_exception:
-            raise SessionError("Not a valid session", sid)
-        else:
-            return False
+        raise SessionError("Not a valid session", sid)
     if session.lastused > datetime.utcnow() - timedelta(hours=1):
         return True
     else:
@@ -128,11 +125,14 @@ def logout(jsoninput=None):
 
 def isLoggedIn(jsoninput=None):
     if 'sid' in jsoninput:
-        if checksession(jsoninput['sid'], False):
-            return {"status":True}
-        else:
-            return {"status":False}
-    raise SessionError("No sessiond specified.", jsoninput['sid'])
+        try:
+            if checksession(jsoninput['sid']):
+                return {"status":True}
+            else:
+                return {"status":False}
+        except SessionError:
+            return {"status": False}
+    raise ApiError("No sessionid specified.")
 
 def freshcutoff():
     threshold = timedelta(hours=3) #better value?
