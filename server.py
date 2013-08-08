@@ -61,16 +61,21 @@ def checksession(sid):
         session = db.select('sessions',
                             where="sid=$sid",
                             vars={'sid': sid})[0]
-    #TODO: cleanup...
     except IndexError:
         raise SessionError("Not a valid session", sid)
-    if session.lastused > datetime.utcnow() - timedelta(hours=1):
-        return True
+    sessionage = datetime.utcnow() - session.lastused
+    if sessionage < timedelta(hours=1):
+        if sessionage > timedelta(minutes=5):
+            db.update('sessions',
+                      where="sid=$sid",
+                      lastused=datetime.utcnow(),
+                      vars={'sid': sid})
+        return session.user_id
     else:
-        if raise_exception:
-            raise SessionError("Not a valid session", sid)
-        else:
-            return False
+        db.delete('sessions',
+                  where="lastused < $sessionexpirey",
+                  vars={'sessionexpirey': datetime.utcnow() - timedelta(hours=1)})
+        raise SessionError("Not a valid session", sid)
 
 
 def ownerofitem(item_id):
