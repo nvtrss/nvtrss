@@ -92,21 +92,21 @@ def ownerofitem(item_id):
 # See http://tt-rss.org/redmine/projects/tt-rss/wiki/JsonApiReference
 ##
 
-def getApiLevel(jsoninput=None):
-    checksession(jsoninput['sid'])
+def getApiLevel(sid, **args):
+    checksession(sid)
     return {'level': api_level}
 
-def getVersion(jsoninput=None):
-    checksession(jsoninput['sid'])
+def getVersion(sid, **args):
+    checksession(sid)
     return {'version': version}
 
-def login(jsoninput=None):
+def login(user, **args):
     #TODO: session handling
     try:
         user_id = db.select('users',
                             what='user_id',
                             where="username=$username",
-                            vars={'username': jsoninput['user']}
+                            vars={'username': user}
                             )[0].user_id
     except IndexError:
         raise ApiError("LOGIN_ERROR")
@@ -118,27 +118,23 @@ def login(jsoninput=None):
     return {'session_id': sid,
             'api_level': api_level}
 
-def logout(jsoninput=None):
-    if 'sid' in jsoninput:
-        sid = jsoninput['sid']
-        if checksession(sid):
-            #TODO: logout
-            db.delete('sessions',
-                      where="sid=$sid",
-                      vars={'sid': sid})
-            return {"status":"OK"}
+def logout(sid, **args):
+    if checksession(sid):
+        #TODO: logout
+        db.delete('sessions',
+                  where="sid=$sid",
+                  vars={'sid': sid})
+        return {"status":"OK"}
     return {"status": "false"}
 
-def isLoggedIn(jsoninput=None):
-    if 'sid' in jsoninput:
-        try:
-            if checksession(jsoninput['sid']):
-                return {"status":True}
-            else:
-                return {"status":False}
-        except SessionError:
-            return {"status": False}
-    raise ApiError("No sessionid specified.")
+def isLoggedIn(sid, **args):
+    try:
+        if checksession(sid):
+            return {"status":True}
+        else:
+            return {"status":False}
+    except SessionError:
+        return {"status": False}
 
 def freshcutoff():
     threshold = timedelta(hours=3) #better value?
@@ -186,19 +182,19 @@ def checksubscribe(feed_url, user_id):
     except IndexError:
         return False
 
-def getUnread(jsoninput=None):
-    user_id = checksession(jsoninput['sid'])
+def getUnread(sid, **args):
+    user_id = checksession(sid)
     result = countunread(user_id)
     return {'unread':str(result)}
 
-def getFeeds(jsoninput=None):
-    user_id = checksession(jsoninput['sid'])
+def getFeeds(sid, cat_id=None, offset=None, limit=None, **args):
+    user_id = checksession(sid)
     #TODO: parameters: cat_id, unread_only, offset, include_nested
     query = """select * from feeds
                where user_id=$user_id"""
     variables = {'user_id': user_id}
-    if 'cat_id' in jsoninput:
-        cat_id = int(jsoninput['cat_id'])
+    if cat_id:
+        cat_id = int(cat_id)
         if cat_id == -4:
             pass
         elif cat_id == 0:
@@ -209,8 +205,8 @@ def getFeeds(jsoninput=None):
     else:
         cat_id = None
     # Splice?
-    if 'limit' in jsoninput:
-        variables['limit'] = int(jsoninput['limit'])
+    if limit:
+        variables['limit'] = int(limit)
         query += " limit $limit"
     feeds = []
     if cat_id == -1:
@@ -218,8 +214,8 @@ def getFeeds(jsoninput=None):
         pass
     else:
         result = db.query(query, vars=variables)
-        if 'offset' in jsoninput:
-            offset = int(jsoninput['offset'])
+        if offset:
+            offset = int(offset)
         else:
             offset = 0
         #TODO: feeds order_id
@@ -247,22 +243,12 @@ def getFeeds(jsoninput=None):
                       'cat_id': -1})
     return feeds
 
-def parse_jsoninput(jsoninput, options):
-    new_jsoninput = {}
-    for option in options:
-        try:
-            new_jsoninput[option] = bool(jsoninput[option])
-        except KeyError:
-            new_jsoninput[option] = False
-    return new_jsoninput
 
-def getCategories(jsoninput=None):
+def getCategories(sid, unread_only=None, enable_nested=None, include_empty=None, **args):
     # TODO: parameters: include_empty
-    user_id = checksession(jsoninput['sid'])
-    options = ['unread_only', 'enable_nested', 'include_empty']
-    jsoninput = parse_jsoninput(jsoninput, options)
+    user_id = checksession(sid)
         
-    if jsoninput['enable_nested']:
+    if enable_nested:
         categories = db.select('categories',
                                where="""user_id=$user_id
                                         AND parent IS NULL""",
@@ -291,7 +277,7 @@ def getCategories(jsoninput=None):
                                and items.read is NULL;""",
                           vars={'user_id': user_id,
                                 'cat_id': category.cat_id})[0].count
-        if jsoninput['unread_only'] and not unread:
+        if unread_only and not unread:
             continue
         result.append({'id': category.cat_id,
                        'title': category.name,
@@ -301,19 +287,19 @@ def getCategories(jsoninput=None):
     return result
 
 
-def getHeadlines(jsoninput=None):
+def getHeadlines(sid, feed_id=None, limit=None, view_mode=None, **args):
     #TODO: parameters: skip, is_cat, show_excerpt, show_content, view_mode
     #TODO: parameters: include_attachments, since_id, include_nested, order_by
-    user_id = checksession(jsoninput['sid'])
+    user_id = checksession(sid)
     query = """select * from items
                join feeds
                  on feeds.feed_id=items.feed_id
                where feeds.user_id=$user_id"""
     variables = {'user_id': user_id}
-    if 'feed_id' in jsoninput:
-        feed_id = int(jsoninput['feed_id'])
+    if feed_id:
+        feed_id = int(feed_id)
         if feed_id > 0:
-            variables['feed_id'] = int(jsoninput['feed_id'])
+            variables['feed_id'] = feed_id
             query += str(" and items.feed_id=$feed_id")
         elif feed_id == 0: # TODO: all the others...
             # FIXME: uncategorized or archived? Unclear
@@ -321,11 +307,13 @@ def getHeadlines(jsoninput=None):
         elif feed_id == -3: #fresh only
             query += str(" and items.published > $published")
             variables['published'] = freshcutoff()
-    if 'limit' in jsoninput and jsoninput['limit'] < 201:
-        variables['limit'] = int(jsoninput['limit'])
+    if limit:
+        limit = int(limit)
+        if limit < 201:
+            variables['limit'] = limit
     else:
         variables['limit'] = 200
-    if jsoninput['view_mode'] in ['adaptive', 'unread']:
+    if view_mode in ['adaptive', 'unread']:
         query += str(" and items.read is NULL")
     query += str(" limit $limit")
     results = db.query(query, vars=variables)
@@ -336,15 +324,15 @@ def getHeadlines(jsoninput=None):
 
 item_fields = ['starred', 'published', 'read'] # TODO: article?!
 
-def updateArticle(jsoninput=None):
+def updateArticle(sid, article_ids, mode, field, **args):
     #TODO: all
-    user_id = checksession(jsoninput['sid'])
+    user_id = checksession(sid)
     try:
-        article_ids = jsoninput['article_ids'].split(',')
+        article_ids = article_ids.split(',')
     except AttributeError:
-        article_ids = [jsoninput['article_ids'], ]
-    mode = int(jsoninput['mode'])
-    field = int(jsoninput['field'])
+        article_ids = [article_ids, ]
+    mode = int(mode)
+    field = int(field)
     result = []
     count = 0
     for item_id in article_ids:
@@ -376,9 +364,9 @@ def updateArticle(jsoninput=None):
         else:
             raise OwnershipError("Not a valid session for article.", user_id, item_id)
 
-def getArticle(jsoninput=None):
-    user_id = checksession(jsoninput['sid'])
-    article_ids = jsoninput['article_id'].split(',')
+def getArticle(sid, article_id, **args):
+    user_id = checksession(sid)
+    article_ids = article_id.split(',') #FIXME: function to split article_id(s)
     articles = []
     for item_id in article_ids:
         if user_id == ownerofitem(item_id):
@@ -388,9 +376,9 @@ def getArticle(jsoninput=None):
             articles.append(article(item))
     return articles
 
-def subscribeToFeed(jsoninput=None):
-    user_id = checksession(jsoninput['sid'])
-    feed_url = urlparse(jsoninput['feed_url'])
+def subscribeToFeed(sid, feed_url, **args):
+    user_id = checksession(sid)
+    feed_url = urlparse(feed_url)
     if not feed_url.netloc:
         raise ApiError("Must specify a full valid url including scheme.")
     if checksubscribe(feed_url, user_id):
@@ -445,7 +433,7 @@ class api:
 
         if 'op' in jsoninput:
             try:
-                output['content'] = apifunctions[jsoninput['op']](jsoninput=jsoninput)
+                output['content'] = apifunctions[jsoninput['op']](**jsoninput)
                 output['status'] = 0
             except KeyError:
                 output['status'] = 1
