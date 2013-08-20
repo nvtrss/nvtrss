@@ -15,7 +15,7 @@ CREATE TABLE categories (cat_id INTEGER PRIMARY KEY AUTOINCREMENT,
 
 CREATE TABLE feeds (feed_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     url,
-                    lastupdate,
+                    lastupdate timestamp,
                     feed_title,
                     cat_id,
                     user_id,
