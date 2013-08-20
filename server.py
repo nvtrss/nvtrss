@@ -5,6 +5,7 @@ import json
 import uuid
 
 from datetime import datetime, timedelta
+from urlparse import urlparse, urlunparse
 
 version = "0.0.1"
 api_level = -1
@@ -174,6 +175,16 @@ def article(row):
             'content': row.content,
             }
 
+def checksubscribe(feed_url, user_id):
+    try:
+        return db.select('feeds',
+                         where="url=$feed_url AND user_id=$user_id",
+                         what="feed_id",
+                         vars={'feed_url': urlunparse(feed_url),
+                               'user_id': user_id}
+                         )[0].feed_id
+    except IndexError:
+        return False
 
 def getUnread(jsoninput=None):
     user_id = checksession(jsoninput['sid'])
@@ -379,9 +390,13 @@ def getArticle(jsoninput=None):
 
 def subscribeToFeed(jsoninput=None):
     user_id = checksession(jsoninput['sid'])
-    feed_url = jsoninput['feed_url']
+    feed_url = urlparse(jsoninput['feed_url'])
+    if not feed_url.netloc:
+        raise ApiError("Must specify a full valid url including scheme.")
+    if checksubscribe(feed_url, user_id):
+        raise ApiError("Already susbcribed to this feed.")
     #TODO: cat_id
-    db.insert('feeds', url=feed_url, user_id=user_id, cat_id=0)
+    db.insert('feeds', url=urlunparse(feed_url), user_id=user_id, cat_id=0)
 
                             
 #TODO: getConfig
