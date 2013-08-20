@@ -222,7 +222,7 @@ def getFeeds(jsoninput=None):
                           #TODO: favicon support
                           'has_icon': True,
                           'cat_id': feed.cat_id,
-                          'last_updated': feed.lastupdate,
+                          'last_updated': feed.lastupdate.strftime("%s"),
                           'order_id': order_id})
             order_id += 1
     if cat_id is None or cat_id == -1 or cat_id == -4:
