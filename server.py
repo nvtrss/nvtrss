@@ -100,7 +100,7 @@ def getVersion(sid, **args):
     checksession(sid)
     return {'version': version}
 
-def login(user, **args):
+def login(user=None, **args):
     #TODO: session handling
     try:
         user_id = db.select('users',
