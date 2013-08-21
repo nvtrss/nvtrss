@@ -2,11 +2,17 @@
 
 import web
 import feedparser
+import ConfigParser
 
 from time import mktime
 from datetime import datetime
 
+config = ConfigParser.RawConfigParser()
+config.read('nvtrss.cfg')
+debug = config.getboolean('updater', 'debug')
+
 db = web.database(dbn='sqlite', db='database.db')
+db.printing = debug
 
 def feedstoprocess(limit=1):
     feeds = db.select('feeds', order='lastupdate ASC', limit=limit)
@@ -26,7 +32,6 @@ for feed in feedstoprocess():
               feed_title=result.feed.title,
               vars={'feed_id': feed.feed_id})
     for entry in result.entries:
-        print entry.published_parsed
         published = datetime.fromtimestamp(mktime(entry.published_parsed))
         updated = datetime.fromtimestamp(mktime(entry.updated_parsed))
         content = None
