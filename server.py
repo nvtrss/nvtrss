@@ -86,6 +86,8 @@ def ownerofitem(item_id):
                        where item_id=$item_id""",
                     vars={'item_id': item_id})[0].user_id
 
+def splitarticleids(article_ids):
+    return [x for x in article_ids.split(',') if x]
 
 ##
 # API Function:
@@ -327,10 +329,7 @@ item_fields = ['starred', 'published', 'read'] # TODO: article?!
 def updateArticle(sid, article_ids, mode, field, **args):
     #TODO: all
     user_id = checksession(sid)
-    try:
-        article_ids = article_ids.split(',')
-    except AttributeError:
-        article_ids = [article_ids, ]
+    article_ids = splitarticleids(article_ids)
     mode = int(mode)
     field = int(field)
     result = []
@@ -366,7 +365,7 @@ def updateArticle(sid, article_ids, mode, field, **args):
 
 def getArticle(sid, article_id, **args):
     user_id = checksession(sid)
-    article_ids = article_id.split(',') #FIXME: function to split article_id(s)
+    article_ids = splitarticleids(article_ids)
     articles = []
     for item_id in article_ids:
         if user_id == ownerofitem(item_id):
