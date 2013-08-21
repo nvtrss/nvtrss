@@ -89,6 +89,52 @@ def ownerofitem(item_id):
 def splitarticleids(article_ids):
     return [x for x in article_ids.split(',') if x]
 
+def freshcutoff():
+    threshold = timedelta(hours=3) #better value?
+    return int((datetime.utcnow() - threshold).strftime('%s')) #FIXME: ewww.
+
+def countunread(user_id, feed_id=None, uncategorised=False, fresh=False):
+    #TODO: freshness... younger than date?
+    SQL = """select count() as count from items
+             join feeds
+               on feeds.feed_id=items.feed_id
+             where user_id=$user_id
+               and read is null"""
+    variables = {'user_id': user_id}
+    if feed_id:
+        SQL += str(" and feeds.feed_id=$feed_id")
+        variables['feed_id'] = feed_id
+    if uncategorised:
+        SQL += str(" and feeds.cat_id IS NULL")
+    if fresh:
+        SQL += str(" and items.published > $published")
+        variables['published'] = freshcutoff()
+    result = db.query(SQL, vars=variables)[0].count
+    return result
+
+def article(row):
+    return {'id': row.item_id,
+            'feed_id': row.feed_id,
+            'unread': not bool(row.read),
+            'updated': row.updated.strftime('%s'),
+            'title': row.title,
+            'link': row.guid,
+            'feed_title': row.feed_title,
+            #TODO: tags
+            'content': row.content,
+            }
+
+def checksubscribe(feed_url, user_id):
+    try:
+        return db.select('feeds',
+                         where="url=$feed_url AND user_id=$user_id",
+                         what="feed_id",
+                         vars={'feed_url': urlunparse(feed_url),
+                               'user_id': user_id}
+                         )[0].feed_id
+    except IndexError:
+        return False
+
 ##
 # API Function:
 # See http://tt-rss.org/redmine/projects/tt-rss/wiki/JsonApiReference
@@ -137,52 +183,6 @@ def isLoggedIn(sid, **args):
             return {"status":False}
     except SessionError:
         return {"status": False}
-
-def freshcutoff():
-    threshold = timedelta(hours=3) #better value?
-    return int((datetime.utcnow() - threshold).strftime('%s')) #FIXME: ewww.
-
-def countunread(user_id, feed_id=None, uncategorised=False, fresh=False):
-    #TODO: freshness... younger than date?
-    SQL = """select count() as count from items
-             join feeds
-               on feeds.feed_id=items.feed_id
-             where user_id=$user_id
-               and read is null"""
-    variables = {'user_id': user_id}
-    if feed_id:
-        SQL += str(" and feeds.feed_id=$feed_id")
-        variables['feed_id'] = feed_id
-    if uncategorised:
-        SQL += str(" and feeds.cat_id IS NULL")
-    if fresh:
-        SQL += str(" and items.published > $published")
-        variables['published'] = freshcutoff()
-    result = db.query(SQL, vars=variables)[0].count
-    return result
-
-def article(row):
-    return {'id': row.item_id,
-            'feed_id': row.feed_id,
-            'unread': not bool(row.read),
-            'updated': row.updated.strftime('%s'),
-            'title': row.title,
-            'link': row.guid,
-            'feed_title': row.feed_title,
-            #TODO: tags
-            'content': row.content,
-            }
-
-def checksubscribe(feed_url, user_id):
-    try:
-        return db.select('feeds',
-                         where="url=$feed_url AND user_id=$user_id",
-                         what="feed_id",
-                         vars={'feed_url': urlunparse(feed_url),
-                               'user_id': user_id}
-                         )[0].feed_id
-    except IndexError:
-        return False
 
 def getUnread(sid, **args):
     user_id = checksession(sid)
