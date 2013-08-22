@@ -3,6 +3,7 @@
 import web
 import feedparser
 import ConfigParser
+import logging
 
 from time import mktime
 from datetime import datetime
@@ -10,6 +11,8 @@ from datetime import datetime
 config = ConfigParser.RawConfigParser()
 config.read('nvtrss.cfg')
 debug = config.getboolean('updater', 'debug')
+
+logging.basicConfig(level=logging.INFO)
 
 db = web.database(dbn='sqlite', db='database.db')
 db.printing = debug
@@ -26,8 +29,10 @@ def lastupdate(feed_id):
         return 0
 
 for feed in feedstoprocess():
+    logging.info("Processing %s" % feed.url)
     result = feedparser.parse(feed.url, etag=feed.etag, modified=feed.last_modified)
     if result.status == 304:
+        logging.info("304 received, skipping.")
         continue
     try:
         db.update('feeds',
@@ -61,7 +66,9 @@ for feed in feedstoprocess():
                              where="feed_id=$feed_id AND guid=$guid",
                              vars={'feed_id': feed.feed_id, 'guid': entry.id})[0]
             item_id = item.item_id
+            logging.debug("%s already exists." % entry.id)
             if updated > item.updated:
+                logging.info("%s updated." % entry.id)
                 db.update('items',
                           where="guid=$guid",
                           title=entry.title,
@@ -71,6 +78,7 @@ for feed in feedstoprocess():
                           content=content,
                           vars={'guid': entry.id})
         except IndexError:
+            logging.info("%s new!" % entry.id)
             item_id = db.insert('items',
                                 feed_id=feed.feed_id,
                                 title=entry.title,
@@ -80,3 +88,4 @@ for feed in feedstoprocess():
                                 content=content,
                                 guid=entry.id)
     db.update('feeds', where="feed_id=$feed_id", vars={'feed_id': feed.feed_id}, lastupdate=datetime.utcnow())
+    logging.info("Finished.")
