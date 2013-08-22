@@ -22,13 +22,7 @@ app = web.application(urls, globals())
 
 db = web.database(dbn='sqlite', db='database.db')
 db.printing = debug
-
-web.config.debug = True
-#if web.config.get('_session') is None:
-#    session = web.session.Session(app, web.session.DiskStore('sessions'), {'username': None})
-#    web.config._session = session
-#else:
-#    session = web.config._session
+web.config.debug = debug
 
 class ApiError(Exception):
     """Base class for exceptions in this module."""
