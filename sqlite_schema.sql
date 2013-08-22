@@ -19,6 +19,8 @@ CREATE TABLE feeds (feed_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     feed_title,
                     cat_id,
                     user_id,
+                    etag,
+                    last_modified timestamp,
                     FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE
                    );
 

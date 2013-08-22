@@ -26,11 +26,21 @@ def lastupdate(feed_id):
         return 0
 
 for feed in feedstoprocess():
-    result = feedparser.parse(feed.url)
-    db.update('feeds',
-              where="feed_id=$feed_id",
-              feed_title=result.feed.title,
-              vars={'feed_id': feed.feed_id})
+    result = feedparser.parse(feed.url, etag=feed.etag, modified=feed.last_modified)
+    if result.status == 304:
+        continue
+    try:
+        db.update('feeds',
+                  where="feed_id=$feed_id",
+                  feed_title=result.feed.title,
+                  etag=result.etag,
+                  vars={'feed_id': feed.feed_id})
+    except AttributeError:
+        db.update('feeds',
+                  where="feed_id=$feed_id",
+                  feed_title=result.feed.title,
+                  last_modified=result.modified,
+                  vars={'feed_id': feed.feed_id})
     for entry in result.entries:
         published = datetime.fromtimestamp(mktime(entry.published_parsed))
         updated = datetime.fromtimestamp(mktime(entry.updated_parsed))
