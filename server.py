@@ -92,7 +92,10 @@ def ownerofitem(item_id):
                     vars={'item_id': item_id})[0].user_id
 
 def splitarticleids(article_ids):
-    return [x for x in article_ids.split(',') if x]
+    try:
+        return [x for x in article_ids.split(',') if x]
+    except AttributeError:
+        return [int(article_ids),]
 
 def freshcutoff():
     threshold = timedelta(hours=3) #better value?
