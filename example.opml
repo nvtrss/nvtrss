@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<opml version="1.0">
+  <head>
+    <dateCreated>Thu, 22 Aug 2013 19:23:26 +0000</dateCreated>
+    <title>Example Feed Export</title>
+  </head>
+  <body>
+    <outline text="Example First Category">
+      <outline text="Tiny Tiny RSS: New Releases" xmlUrl="http://tt-rss.org/releases.rss" htmlUrl="http://tt-rss.org/"/>
+    </outline>
+    <outline text="TEDTalks (video)" xmlUrl="http://feeds.feedburner.com/tedtalks_video" htmlUrl="http://www.ted.com/talks/list"/>
+  </body>
+</opml>

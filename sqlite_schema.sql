@@ -10,7 +10,8 @@ CREATE TABLE categories (cat_id INTEGER PRIMARY KEY AUTOINCREMENT,
                          parent,
                          user_id,
                          FOREIGN KEY(parent) REFERENCES categories(cat_id) ON DELETE CASCADE,
-                         FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE
+                         FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+                         UNIQUE(user_id, name, parent)
                         );
 
 CREATE TABLE feeds (feed_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -21,7 +22,8 @@ CREATE TABLE feeds (feed_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user_id,
                     etag,
                     last_modified timestamp,
-                    FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE
+                    FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+                    UNIQUE(user_id, url)
                    );
 
 CREATE TABLE items (feed_id,
@@ -34,18 +36,15 @@ CREATE TABLE items (feed_id,
                     read timestamp,
                     starred timestamp,
                     item_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    FOREIGN KEY(feed_id) REFERENCES feeds(feed_id) ON DELETE CASCADE
+                    FOREIGN KEY(feed_id) REFERENCES feeds(feed_id) ON DELETE CASCADE,
+                    UNIQUE(feed_id, guid)
                    );
 
-CREATE TABLE users (user_id, username);
+CREATE TABLE users (user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username);
 
 CREATE TABLE sessions (user_id,
                        sid,
                        lastused timestamp,
                        FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE
                       );
-
-INSERT INTO users (user_id, username) values(1, 'admin');
-INSERT INTO categories (name, user_id) values('Example First Category', 1);
-INSERT INTO feeds (url, feed_id, user_id) values('http://rss.slashdot.org/Slashdot/slashdot', 1, 1);
-INSERT INTO feeds (url, feed_id, cat_id, user_id) values('http://feeds.arstechnica.com/arstechnica/index?format=xml', 2, 1, 1);

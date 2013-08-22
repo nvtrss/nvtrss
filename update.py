@@ -21,7 +21,7 @@ db.printing = debug
 
 def feedstoprocess(limit=None):
     feeds = db.select('feeds',
-                      where="lastupdate < $lastupdate",
+                      where="lastupdate < $lastupdate OR lastupdate IS NULL",
                       order='lastupdate ASC',
                       limit=limit,
                       vars={'lastupdate': datetime.utcnow() - updatefrequency})
