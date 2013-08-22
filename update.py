@@ -35,65 +35,71 @@ def lastupdate(feed_id):
 def update_lastupdate(feed_id):
     db.update('feeds', where="feed_id=$feed_id", vars={'feed_id': feed.feed_id}, lastupdate=datetime.utcnow())
 
-for feed in feedstoprocess():
-    logging.info("Processing %s" % feed.url)
-    result = feedparser.parse(feed.url, etag=feed.etag, modified=feed.last_modified)
-    if result.status == 304:
-        update_lastupdate(feed.feed_id)
-        logging.info("304 received, skipping.")
-        continue
-    try:
-        db.update('feeds',
-                  where="feed_id=$feed_id",
-                  feed_title=result.feed.title,
-                  etag=result.etag,
-                  vars={'feed_id': feed.feed_id})
-    except AttributeError:
-        db.update('feeds',
-                  where="feed_id=$feed_id",
-                  feed_title=result.feed.title,
-                  last_modified=result.modified,
-                  vars={'feed_id': feed.feed_id})
-    for entry in result.entries:
-        published = datetime.fromtimestamp(mktime(entry.published_parsed))
-        updated = datetime.fromtimestamp(mktime(entry.updated_parsed))
-        content = None
-        if entry.description:
-            content = entry.description
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv
+    for feed in feedstoprocess():
+        logging.info("Processing %s" % feed.url)
+        result = feedparser.parse(feed.url, etag=feed.etag, modified=feed.last_modified)
+        if result.status == 304:
+            update_lastupdate(feed.feed_id)
+            logging.info("304 received, skipping.")
+            continue
         try:
-            for c in entry.content:
-                if content:
-                    content+=c.value
-                else:
-                    content=c.value
+            db.update('feeds',
+                      where="feed_id=$feed_id",
+                      feed_title=result.feed.title,
+                      etag=result.etag,
+                      vars={'feed_id': feed.feed_id})
         except AttributeError:
-            #Not an atom feed
-            pass
-        try:
-            item = db.select('items',
-                             where="feed_id=$feed_id AND guid=$guid",
-                             vars={'feed_id': feed.feed_id, 'guid': entry.id})[0]
-            item_id = item.item_id
-            logging.debug("%s already exists." % entry.id)
-            if updated > item.updated:
-                logging.info("%s updated." % entry.id)
-                db.update('items',
-                          where="guid=$guid",
-                          title=entry.title,
-                          description=entry.description,
-                          published=published,
-                          updated=updated,
-                          content=content,
-                          vars={'guid': entry.id})
-        except IndexError:
-            logging.info("%s new!" % entry.id)
-            item_id = db.insert('items',
-                                feed_id=feed.feed_id,
-                                title=entry.title,
-                                description=entry.description,
-                                published=published,
-                                updated=updated,
-                                content=content,
-                                guid=entry.id)
-    update_lastupdate(feed.feed_id)
-    logging.info("Finished.")
+            db.update('feeds',
+                      where="feed_id=$feed_id",
+                      feed_title=result.feed.title,
+                      last_modified=result.modified,
+                      vars={'feed_id': feed.feed_id})
+        for entry in result.entries:
+            published = datetime.fromtimestamp(mktime(entry.published_parsed))
+            updated = datetime.fromtimestamp(mktime(entry.updated_parsed))
+            content = None
+            if entry.description:
+                content = entry.description
+            try:
+                for c in entry.content:
+                    if content:
+                        content+=c.value
+                    else:
+                        content=c.value
+            except AttributeError:
+                #Not an atom feed
+                pass
+            try:
+                item = db.select('items',
+                                 where="feed_id=$feed_id AND guid=$guid",
+                                 vars={'feed_id': feed.feed_id, 'guid': entry.id})[0]
+                item_id = item.item_id
+                logging.debug("%s already exists." % entry.id)
+                if updated > item.updated:
+                    logging.info("%s updated." % entry.id)
+                    db.update('items',
+                              where="guid=$guid",
+                              title=entry.title,
+                              description=entry.description,
+                              published=published,
+                              updated=updated,
+                              content=content,
+                              vars={'guid': entry.id})
+            except IndexError:
+                logging.info("%s new!" % entry.id)
+                item_id = db.insert('items',
+                                    feed_id=feed.feed_id,
+                                    title=entry.title,
+                                    description=entry.description,
+                                    published=published,
+                                    updated=updated,
+                                    content=content,
+                                    guid=entry.id)
+        update_lastupdate(feed.feed_id)
+        logging.info("Finished.")
+
+if __name__ == "__main__":
+    sys.exit(main())
