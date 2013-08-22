@@ -27,11 +27,14 @@ def lastupdate(feed_id):
         return result
     else:
         return 0
+def update_lastupdate(feed_id):
+    db.update('feeds', where="feed_id=$feed_id", vars={'feed_id': feed.feed_id}, lastupdate=datetime.utcnow())
 
 for feed in feedstoprocess():
     logging.info("Processing %s" % feed.url)
     result = feedparser.parse(feed.url, etag=feed.etag, modified=feed.last_modified)
     if result.status == 304:
+        update_lastupdate(feed.feed_id)
         logging.info("304 received, skipping.")
         continue
     try:
@@ -87,5 +90,5 @@ for feed in feedstoprocess():
                                 updated=updated,
                                 content=content,
                                 guid=entry.id)
-    db.update('feeds', where="feed_id=$feed_id", vars={'feed_id': feed.feed_id}, lastupdate=datetime.utcnow())
+    update_lastupdate(feed.feed_id)
     logging.info("Finished.")
