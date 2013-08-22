@@ -34,7 +34,7 @@ def lastupdate(feed_id):
     else:
         return 0
 def update_lastupdate(feed_id):
-    db.update('feeds', where="feed_id=$feed_id", vars={'feed_id': feed.feed_id}, lastupdate=datetime.utcnow())
+    db.update('feeds', where="feed_id=$feed_id", vars={'feed_id': feed_id}, lastupdate=datetime.utcnow())
 
 def main(argv=None):
     if argv is None:
