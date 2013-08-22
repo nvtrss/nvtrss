@@ -6,19 +6,24 @@ import ConfigParser
 import logging
 
 from time import mktime
-from datetime import datetime
+from datetime import datetime, timedelta
 
 config = ConfigParser.RawConfigParser()
 config.read('nvtrss.cfg')
 debug = config.getboolean('updater', 'debug')
+updatefrequency = timedelta(minutes=config.getint('updater', 'frequency'))
 
 logging.basicConfig(level=logging.INFO)
 
 db = web.database(dbn='sqlite', db='database.db')
 db.printing = debug
 
-def feedstoprocess(limit=1):
-    feeds = db.select('feeds', order='lastupdate ASC', limit=limit)
+def feedstoprocess(limit=None):
+    feeds = db.select('feeds',
+                      where="lastupdate < $lastupdate",
+                      order='lastupdate ASC',
+                      limit=limit,
+                      vars={'lastupdate': datetime.utcnow() - updatefrequency})
     return feeds
 
 def lastupdate(feed_id):

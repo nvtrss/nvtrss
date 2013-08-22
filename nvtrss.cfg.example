@@ -2,4 +2,5 @@
 debug: False
 
 [updater]
+frequency: 15
 debug: False
