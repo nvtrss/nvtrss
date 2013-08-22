@@ -3,12 +3,16 @@
 import web
 import json
 import uuid
+import ConfigParser
 
 from datetime import datetime, timedelta
 from urlparse import urlparse, urlunparse
 
 version = "0.0.1"
 api_level = -1
+config = ConfigParser.RawConfigParser()
+config.read('nvtrss.cfg')
+debug = config.getboolean('server', 'debug')
         
 urls = (
     '/api', 'api',
@@ -17,6 +21,7 @@ urls = (
 app = web.application(urls, globals())
 
 db = web.database(dbn='sqlite', db='database.db')
+db.printing = debug
 
 web.config.debug = True
 #if web.config.get('_session') is None:

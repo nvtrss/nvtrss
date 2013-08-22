@@ -1,2 +1,5 @@
+[server]
+debug: False
+
 [updater]
 debug: False
