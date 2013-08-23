@@ -9,6 +9,8 @@ import logging
 from time import mktime
 from datetime import datetime, timedelta
 
+from common import db
+
 config = ConfigParser.RawConfigParser()
 config.read('nvtrss.cfg')
 debug = config.getboolean('updater', 'debug')
@@ -16,7 +18,6 @@ updatefrequency = timedelta(minutes=config.getint('updater', 'frequency'))
 
 logging.basicConfig(level=logging.INFO)
 
-db = web.database(dbn='sqlite', db='database.db')
 db.printing = debug
 
 def feedstoprocess(limit=None):

@@ -8,6 +8,8 @@ import ConfigParser
 from datetime import datetime, timedelta
 from urlparse import urlparse, urlunparse
 
+from common import db
+
 version = "0.0.1"
 api_level = -1
 config = ConfigParser.RawConfigParser()
@@ -20,7 +22,6 @@ urls = (
 )
 app = web.application(urls, globals())
 
-db = web.database(dbn='sqlite', db='database.db')
 db.printing = debug
 web.config.debug = debug
 

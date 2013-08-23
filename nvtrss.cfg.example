@@ -4,3 +4,7 @@ debug: False
 [updater]
 frequency: 15
 debug: False
+
+[database]
+dbn: sqlite
+db: database.db
