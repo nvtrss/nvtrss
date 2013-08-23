@@ -120,7 +120,7 @@ def article(row):
             'unread': not bool(row.read),
             'updated': row.updated.strftime('%s'),
             'title': row.title,
-            'link': row.guid,
+            'link': row.link,
             'feed_title': row.feed_title,
             #TODO: tags
             'content': row.content,
