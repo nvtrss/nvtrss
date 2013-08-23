@@ -46,18 +46,12 @@ def main(argv=None):
             update_lastupdate(feed.feed_id)
             logging.info("304 received, skipping.")
             continue
-        try:
-            db.update('feeds',
-                      where="feed_id=$feed_id",
-                      feed_title=result.feed.title,
-                      etag=result.etag,
-                      vars={'feed_id': feed.feed_id})
-        except AttributeError:
-            db.update('feeds',
-                      where="feed_id=$feed_id",
-                      feed_title=result.feed.title,
-                      last_modified=result.modified,
-                      vars={'feed_id': feed.feed_id})
+        db.update('feeds',
+                  where="feed_id=$feed_id",
+                  feed_title=result.feed.get('title', feed.url),
+                  etag=result.get('etag', None),
+                  last_modified=result.get('modified', None),
+                  vars={'feed_id': feed.feed_id})
         for entry in result.entries:
             published = datetime.fromtimestamp(mktime(entry.published_parsed))
             updated = datetime.fromtimestamp(mktime(entry.updated_parsed))
