@@ -71,14 +71,15 @@ def main(argv=None):
             except AttributeError:
                 #Not an atom feed
                 pass
+            guid = entry.get('id', entry.title)
             try:
                 item = db.select('items',
                                  where="feed_id=$feed_id AND guid=$guid",
-                                 vars={'feed_id': feed.feed_id, 'guid': entry.id})[0]
+                                 vars={'feed_id': feed.feed_id, 'guid': guid})[0]
                 item_id = item.item_id
-                logging.debug("%s already exists." % entry.id)
+                logging.debug("%s already exists." % guid)
                 if not item.updated or updated > item.updated:
-                    logging.info("%s updated." % entry.id)
+                    logging.info("%s updated." % guid)
                     db.update('items',
                               where="guid=$guid",
                               title=entry.title,
@@ -87,9 +88,9 @@ def main(argv=None):
                               published=published,
                               updated=updated,
                               content=content,
-                              vars={'guid': entry.id})
+                              vars={'guid': guid})
             except IndexError:
-                logging.info("%s new!" % entry.id)
+                logging.info("%s new!" % guid)
                 item_id = db.insert('items',
                                     feed_id=feed.feed_id,
                                     title=entry.title,
@@ -98,7 +99,7 @@ def main(argv=None):
                                     published=published,
                                     updated=updated,
                                     content=content,
-                                    guid=entry.id)
+                                    guid=guid)
         update_lastupdate(feed.feed_id)
         logging.info("Finished.")
 
