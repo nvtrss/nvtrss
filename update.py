@@ -53,8 +53,12 @@ def main(argv=None):
                   last_modified=result.get('modified', None),
                   vars={'feed_id': feed.feed_id})
         for entry in result.entries:
-            published = datetime.fromtimestamp(mktime(entry.published_parsed))
-            updated = datetime.fromtimestamp(mktime(entry.updated_parsed))
+            published = entry.get('published_parsed', None)
+            if published:
+                published = datetime.fromtimestamp(mktime(published))
+            updated = entry.get('updated_parsed', None)
+            if updated:
+                updated = datetime.fromtimestamp(mktime(updated))
             content = None
             if entry.description:
                 content = entry.description
@@ -73,7 +77,7 @@ def main(argv=None):
                                  vars={'feed_id': feed.feed_id, 'guid': entry.id})[0]
                 item_id = item.item_id
                 logging.debug("%s already exists." % entry.id)
-                if updated > item.updated:
+                if not item.updated or updated > item.updated:
                     logging.info("%s updated." % entry.id)
                     db.update('items',
                               where="guid=$guid",
