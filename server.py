@@ -124,6 +124,7 @@ def article(row):
             'link': row.link,
             'feed_title': row.feed_title,
             #TODO: tags
+            'excerpt': row.description,
             'content': row.content,
             }
 
