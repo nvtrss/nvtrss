@@ -7,6 +7,7 @@ import ConfigParser
 
 from datetime import datetime, timedelta
 from urlparse import urlparse, urlunparse
+from os import path
 
 from common import db
 
@@ -389,8 +390,25 @@ def subscribeToFeed(sid, feed_url, **args):
     #TODO: cat_id
     db.insert('feeds', url=urlunparse(feed_url), user_id=user_id, cat_id=0)
 
+def getConfig(sid, **args):
+    user_id = checksession(sid)
+    num_feeds = db.query("""select count() as count
+                              from feeds
+                            where user_id=$user_id""",
+                         vars={'user_id': user_id})[0].count
+    lastupdate = db.query("""select max(lastupdate) as lastupdate
+                               from feeds""")[0].lastupdate
+    timesince_lastupdate = datetime.utcnow() - lastupdate
+    if timesince_lastupdate > timedelta(minutes=15):
+        daemon_is_running = True
+    else:
+        daemon_is_running = False
+    return {'icons_dir': path.join('static', 'feed-icons'),
+            'icons_url': 'static/feed-icons',
+            'daemon_is_running': daemon_is_running,
+            'num_feeds': num_feeds}
+
                             
-#TODO: getConfig
 #TODO: updateFeed
 #TODO: getPref
 #TODO: catchupFeed
@@ -415,6 +433,7 @@ apifunctions = {'getApiLevel': getApiLevel,
                 'getArticle': getArticle,
                 'getCategories': getCategories,
                 'subscribeToFeed': subscribeToFeed,
+                'getConfig': getConfig,
                }
 
 class api:
