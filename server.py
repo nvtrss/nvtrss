@@ -105,7 +105,7 @@ def ownerofitem(item_id):
 
 def splitarticleids(article_ids):
     try:
-        return [x for x in article_ids.split(',') if x]
+        return [int(x) for x in article_ids.split(',') if x]
     except AttributeError:
         return [int(article_ids),]
 
@@ -377,7 +377,7 @@ def updateArticle(sid, article_ids, mode, field, **args):
                 if db.select('items',
                              where='item_id=$item_id',
                              what=item_fields[field],
-                             vars={'item_id': item_id}):
+                             vars={'item_id': item_id})[0][item_fields[field]]:
                     real_mode = None
                 else:
                     real_mode = datetime.utcnow()
