@@ -48,10 +48,14 @@ class SessionError(ApiError):
 
 class OwnershipError(SessionError):
     """Raised when session id is not valid for item."""
-    def __init__(self, msg, sid=None, item_id=None):
+    def __init__(self, msg, sid=None, user_id=None,
+                 item_id=None, feed_id=None, cat_id=None):
         self.msg = msg
         self.sid = sid
+        self.user_id = user_id
         self.item_id = item_id
+        self.item_id = feed_id
+        self.item_id = cat_id
 
     def __str__(self):
         return repr(self.msg)
@@ -366,7 +370,8 @@ def updateArticle(sid, article_ids, mode, field, **args):
                      vars={'mode': real_mode, 'item_id': item_id})
             count += 1
         else:
-            raise OwnershipError("Not a valid session for article.", user_id, item_id)
+            raise OwnershipError("Not a valid session for article.",
+                                 sid=sid, user_id=user_id, item_id=item_id)
 
 def getArticle(sid, article_id, **args):
     user_id = checksession(sid)
