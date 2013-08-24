@@ -84,6 +84,11 @@ def checksession(sid):
                   vars={'sessionexpirey': datetime.utcnow() - timedelta(hours=1)})
         raise SessionError("Not a valid session", sid)
 
+def owneroffeed(feed_id):
+    return db.select('feeds',
+                     what="user_id",
+                     where="feed_id=$feed_id",
+                     vars={'feed_id': feed_id})[0].user_id
 
 def ownerofitem(item_id):
     return db.query("""select user_id from items
