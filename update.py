@@ -64,19 +64,23 @@ def updatefavicon(feed_url, feed_id):
         return False
 
     extension = path.splitext(favicon_path)[1]
-    stored_filename = "%i%s" % (feed_id, extension)
-    stored_path = path.join('static', 'feed-icons', stored_filename)
+    if extension in ['.ico', '.png', '.svg', '.gif', '.apng']:
+        stored_filename = "%i%s" % (feed_id, extension)
+        stored_path = path.join('static', 'feed-icons', stored_filename)
 
-    with open(stored_path, 'wb') as f:
-        for i in favicon.iter_content(chunk_size=1024): 
-            if i: # filter out keep-alive new chunks
-                f.write(i)
-                f.flush()
+        with open(stored_path, 'wb') as f:
+            for i in favicon.iter_content(chunk_size=1024): 
+                if i: # filter out keep-alive new chunks
+                    f.write(i)
+                    f.flush()
+        has_icon = True
+    else:
+        has_icon = False
 
     db.update('feeds',
               where="feed_id=$feed_id",
               icon_updated=datetime.utcnow(),
-              has_icon=True,
+              has_icon=has_icon,
               vars={'feed_id': feed_id})
 
 
