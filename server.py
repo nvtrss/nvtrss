@@ -417,7 +417,10 @@ def updateFeed(sid, feed_id, **args):
                      vars={'feed_id': feed_id})[0]
     updatefeed(feed)
 
-#TODO: getPref
+def getPref(sid, pref_name, **args):
+    user_id = checksession(sid)
+    return {'value': False} #FIXME: Probably want to provide real prefs..
+
 #TODO: catchupFeed
 #TODO: getCounters 1
 #TODO: getLabels 1
@@ -442,6 +445,7 @@ apifunctions = {'getApiLevel': getApiLevel,
                 'subscribeToFeed': subscribeToFeed,
                 'getConfig': getConfig,
                 'updateFeed': updateFeed,
+                'getPref': getPref,
                }
 
 class api:
