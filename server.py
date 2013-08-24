@@ -84,6 +84,12 @@ def checksession(sid):
                   vars={'sessionexpirey': datetime.utcnow() - timedelta(hours=1)})
         raise SessionError("Not a valid session", sid)
 
+def ownerofcat(cat_id):
+    return db.select('categories',
+                     what="user_id",
+                     where="cat_id=$cat_id",
+                     vars={'cat_id': cat_id})[0].user_id
+
 def owneroffeed(feed_id):
     return db.select('feeds',
                      what="user_id",
