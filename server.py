@@ -449,7 +449,7 @@ def catchupFeed(sid, feed_id, is_cat=None, **args):
                 feed_ids.append(feed.feed_id)
         else:
             raise OwnershipError("Not a valid session for feed.",
-                                 user_id, cat_id=cat_id)
+                                 user_id=user_id, cat_id=cat_id)
     else:
         feed_ids=[feed_id,]
     for feed_id in feed_ids:
@@ -461,14 +461,21 @@ def catchupFeed(sid, feed_id, is_cat=None, **args):
                       vars={'feed_id': feed_id})
         else:
             raise OwnershipError("Not a valid session for feed.",
-                                 user_id, feed_id=feed_id)
+                                 user_id=user_id, feed_id=feed_id)
+
+def unsubscribeFeed(sid, feed_id, **args):
+    user_id = checksession(sid)
+    if user_id == owneroffeed(feed_id):
+        db.delete('feeds', where="feed_id=$feed_id")
+    else:
+        raise OwnershipError("Not a valid session for feed.",
+                             user_id=user_id, feed_id=feed_id)
 
 
 #TODO: getCounters 1
 #TODO: getLabels 1
 #TODO: setArticleLabel 1
 #TODO: shareToPublished 4
-#TODO: unsubscribeFeed 5
 #TODO: getFeedTree 5
 
 
@@ -489,6 +496,7 @@ apifunctions = {'getApiLevel': getApiLevel,
                 'updateFeed': updateFeed,
                 'getPref': getPref,
                 'catchupFeed': catchupFeed,
+                'unsubscribeFeed': unsubscribeFeed,
                }
 
 class api:
