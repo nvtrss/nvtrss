@@ -68,7 +68,10 @@ def updatefavicon(feed_url, feed_id):
     stored_path = path.join('static', 'feed-icons', stored_filename)
 
     with open(stored_path, 'wb') as f:
-        f.write(result.content)
+        for i in favicon.iter_content(chunk_size=1024): 
+            if i: # filter out keep-alive new chunks
+                f.write(i)
+                f.flush()
 
     db.update('feeds',
               where="feed_id=$feed_id",
