@@ -396,10 +396,12 @@ def getConfig(sid, **args):
                               from feeds
                             where user_id=$user_id""",
                          vars={'user_id': user_id})[0].count
-    lastupdate = db.query("""select max(lastupdate) as lastupdate
-                               from feeds""")[0].lastupdate
-    timesince_lastupdate = datetime.utcnow() - lastupdate
-    if timesince_lastupdate > timedelta(minutes=15):
+    updatefrequency = timedelta(minutes=config.getint('updater', 'frequency'))
+    updateperiod = datetime.utcnow() - updatefrequency
+    if db.query("""select count() as count
+                     from feeds
+                   where lastupdate>$updateperiod""",
+                   vars={'updateperiod': updateperiod})[0].count:
         daemon_is_running = True
     else:
         daemon_is_running = False
