@@ -10,6 +10,7 @@ from urlparse import urlparse, urlunparse
 from os import path
 
 from common import db
+from update import updatefeed
 
 version = "0.0.1"
 api_level = -1
@@ -409,8 +410,13 @@ def getConfig(sid, **args):
             'daemon_is_running': daemon_is_running,
             'num_feeds': num_feeds}
 
-                            
-#TODO: updateFeed
+def updateFeed(sid, feed_id, **args):
+    user_id = checksession(sid)
+    feed = db.select('feeds',
+                     where="feed_id=$feed_id",
+                     vars={'feed_id': feed_id})[0]
+    updatefeed(feed)
+
 #TODO: getPref
 #TODO: catchupFeed
 #TODO: getCounters 1
@@ -435,6 +441,7 @@ apifunctions = {'getApiLevel': getApiLevel,
                 'getCategories': getCategories,
                 'subscribeToFeed': subscribeToFeed,
                 'getConfig': getConfig,
+                'updateFeed': updateFeed,
                }
 
 class api:
