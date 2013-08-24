@@ -23,6 +23,8 @@ CREATE TABLE feeds (feed_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     etag,
                     last_modified,
                     FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+                    has_icon,
+                    icon_updated timestamp,
                     UNIQUE(user_id, url)
                    );
 

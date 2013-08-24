@@ -5,9 +5,14 @@ import web
 import feedparser
 import ConfigParser
 import logging
+import requests
 
 from time import mktime
 from datetime import datetime, timedelta
+from urlparse import urlparse, urlunparse, ParseResult
+from os import path
+from lxml import etree
+from StringIO import StringIO
 
 from common import db
 
@@ -36,6 +41,41 @@ def lastupdate(feed_id):
         return 0
 def update_lastupdate(feed_id):
     db.update('feeds', where="feed_id=$feed_id", vars={'feed_id': feed_id}, lastupdate=datetime.utcnow())
+
+def updatefavicon(feed_url, feed_id):
+    url = urlparse(feed_url)
+    base_url = urlunparse(ParseResult(url[0], url[1], '', None, None, None))
+    favicon_path = 'favicon.ico'
+    result = requests.get(base_url)
+    parser = etree.HTMLParser()
+    tree = etree.parse(StringIO(result.text), parser)
+    try:
+        favicon_path = tree.xpath('.//link[@rel="shortcut icon"]')[0].attrib['href']
+    except IndexError:
+        try:
+            favicon_path = tree.xpath('.//link[@rel="icon"]')[0].attrib['href']
+        except IndexError:
+            pass
+    favicon_url = urlunparse(ParseResult(url[0], url[1], favicon_path, None, None, None))
+    try:
+        favicon = requests.get(favicon_url)
+    except Exception as e: #FIXME: could deal with this better...
+        logging.warning(e)
+        return False
+
+    extension = path.splitext(favicon_path)[1]
+    stored_filename = "%i%s" % (feed_id, extension)
+    stored_path = path.join('static', 'feed-icons', stored_filename)
+
+    with open(stored_path, 'wb') as f:
+        f.write(result.content)
+
+    db.update('feeds',
+              where="feed_id=$feed_id",
+              icon_updated=datetime.utcnow(),
+              has_icon=True,
+              vars={'feed_id': feed_id})
+
 
 def main(argv=None):
     if argv is None:
@@ -102,6 +142,8 @@ def main(argv=None):
                                     content=content,
                                     guid=guid)
         update_lastupdate(feed.feed_id)
+        if not feed.icon_updated or feed.icon_updated > (datetime.utcnow() - timedelta(days=7)):
+            updatefavicon(feed.url, feed.feed_id)
         logging.info("Finished.")
 
 if __name__ == "__main__":
