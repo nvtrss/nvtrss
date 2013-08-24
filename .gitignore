@@ -37,4 +37,5 @@ nosetests.xml
 .pydevproject
 
 # nvtrss
-static/feed-icons/*.*
+static/*
+!static/feed-icons/.placeholder
