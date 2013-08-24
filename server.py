@@ -245,13 +245,17 @@ def getFeeds(sid, cat_id=None, offset=None, limit=None, **args):
         order_id = 0
         for feed in result:
             unread = countunread(user_id, feed.feed_id)
+            if feed.lastupdate:
+                lastupdate = feed.lastupdate.strftime("%s")
+            else:
+                lastupdate = None
             feeds.append({'feed_url': feed.url,
                           'title': feed.feed_title,
                           'id': feed.feed_id,
                           'unread': unread,
                           'has_icon': feed.has_icon,
                           'cat_id': feed.cat_id,
-                          'last_updated': feed.lastupdate.strftime("%s"),
+                          'last_updated': lastupdate,
                           'order_id': order_id})
             order_id += 1
     if cat_id is None or cat_id == -1 or cat_id == -4:
