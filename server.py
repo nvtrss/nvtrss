@@ -437,7 +437,33 @@ def getPref(sid, pref_name, **args):
     user_id = checksession(sid)
     return {'value': False} #FIXME: Probably want to provide real prefs..
 
-#TODO: catchupFeed
+def catchupFeed(sid, feed_id, is_cat=None, **args):
+    user_id = checksession(sid)
+    if is_cat:
+        cat_id=feed_id
+        feed_ids=[]
+        if user_id == ownerofcat(cat_id):
+            for feed in db.select('feeds',
+                                  where="cat_id=$cat_id",
+                                  vars={'cat_id': cat_id}):
+                feed_ids.append(feed.feed_id)
+        else:
+            raise OwnershipError("Not a valid session for feed.",
+                                 user_id, cat_id=cat_id)
+    else:
+        feed_ids=[feed_id,]
+    for feed_id in feed_ids:
+        if user_id == owneroffeed(feed_id):
+            db.update('items',
+                      where="""feed_id=$feed_id
+                               AND read IS NULL""",
+                      read=datetime.utcnow(),
+                      vars={'feed_id': feed_id})
+        else:
+            raise OwnershipError("Not a valid session for feed.",
+                                 user_id, feed_id=feed_id)
+
+
 #TODO: getCounters 1
 #TODO: getLabels 1
 #TODO: setArticleLabel 1
@@ -462,6 +488,7 @@ apifunctions = {'getApiLevel': getApiLevel,
                 'getConfig': getConfig,
                 'updateFeed': updateFeed,
                 'getPref': getPref,
+                'catchupFeed': catchupFeed,
                }
 
 class api:
