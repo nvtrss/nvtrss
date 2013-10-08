@@ -475,8 +475,43 @@ def unsubscribeFeed(sid, feed_id, **args):
         raise OwnershipError("Not a valid session for feed.",
                              user_id=user_id, feed_id=feed_id)
 
+def getCounters(sid, output_mode, **args):
+    user_id = checksession(sid)
+    if not output_mode:
+        output_mode = 'flc'
+    counters = []
+    counters.append({'id': 'global-unread',
+                     'counter': countunread(user_id)})
 
-#TODO: getCounters 1
+    counters.append({'id': 'subscribed-feed',
+                     'counter': db.query("""select count() as count from feeds
+                                            where user_id=$user_id""",
+                                         vars={'user_id': user_id})[0].count})
+
+    if 'f' in output_mode:
+        for feed in getFeeds(sid):
+            counter = {'id': feed['id'],
+                       'counter': feed['unread'],} 
+            #TODO: error values
+            try:
+                counter['updated'] = feed['last_updated'] #TODO: hh:mm format
+            except KeyError:
+                pass
+            try:
+                counter['has_icon'] = feed['has_icon']
+            except KeyError:
+                pass
+            counters.append(counter)
+    if 't' in output_mode:
+        pass #TODO: implement getCounters t
+    if 'l' in output_mode:
+        pass #TODO: implement getCounters l
+    if 'c' in output_mode:
+        pass #TODO: implement getCounters c
+
+    return counters
+
+
 #TODO: getLabels 1
 #TODO: setArticleLabel 1
 #TODO: shareToPublished 4
@@ -501,6 +536,7 @@ apifunctions = {'getApiLevel': getApiLevel,
                 'getPref': getPref,
                 'catchupFeed': catchupFeed,
                 'unsubscribeFeed': unsubscribeFeed,
+                'getCounters': getCounters,
                }
 
 class api:
