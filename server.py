@@ -483,7 +483,7 @@ def getCounters(sid, output_mode, **args):
     counters.append({'id': 'global-unread',
                      'counter': countunread(user_id)})
 
-    counters.append({'id': 'subscribed-feed',
+    counters.append({'id': 'subscribed-feeds',
                      'counter': db.query("""select count() as count from feeds
                                             where user_id=$user_id""",
                                          vars={'user_id': user_id})[0].count})
