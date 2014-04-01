@@ -1,0 +1,1 @@
+If you don't fancy the android app and are using the built in server you could perhaps extract https://github.com/mboinet/ttrss-mobile here with script/conf.js set with apiPath: "/"
