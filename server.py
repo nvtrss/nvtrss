@@ -4,19 +4,27 @@ import web
 import json
 import uuid
 import ConfigParser
+import feedparser
+import requests
 
+from time import mktime
 from datetime import datetime, timedelta
-from urlparse import urlparse, urlunparse
+from urlparse import urlparse, urlunparse, ParseResult
 from os import path
-
-from common import db
-from update import updatefeed
+from lxml import etree
+from StringIO import StringIO
 
 version = "0.0.1"
 api_level = -1
 config = ConfigParser.RawConfigParser()
 config.read('nvtrss.cfg')
 debug = config.getboolean('server', 'debug')
+
+dbconfig = {}
+for option in config.options('database'):
+    dbconfig[option] = config.get('database', option)
+
+db = web.database(**dbconfig)
         
 urls = (
     '/api', 'api',
@@ -155,6 +163,112 @@ def checksubscribe(feed_url, user_id):
                          )[0].feed_id
     except IndexError:
         return False
+
+def update_lastupdate(feed_id):
+    db.update('feeds', where="feed_id=$feed_id", vars={'feed_id': feed_id}, lastupdate=datetime.utcnow())
+
+def updatefavicon(feed_url, feed_id):
+    url = urlparse(feed_url)
+    base_url = urlunparse(ParseResult(url[0], url[1], '', None, None, None))
+    favicon_path = 'favicon.ico'
+    result = requests.get(base_url)
+    parser = etree.HTMLParser()
+    tree = etree.parse(StringIO(result.text), parser)
+    try:
+        favicon_path = tree.xpath('.//link[@rel="shortcut icon"]')[0].attrib['href']
+    except IndexError:
+        try:
+            favicon_path = tree.xpath('.//link[@rel="icon"]')[0].attrib['href']
+        except IndexError:
+            pass
+    favicon_url = urlunparse(ParseResult(url[0], url[1], favicon_path, None, None, None))
+    try:
+        favicon = requests.get(favicon_url)
+    except Exception as e: #FIXME: could deal with this better...
+        logging.warning(e)
+        return False
+
+    extension = path.splitext(favicon_path)[1]
+    if extension in ['.ico', '.png', '.svg', '.gif', '.apng']:
+        stored_filename = "%i%s" % (feed_id, extension)
+        stored_path = path.join('static', 'feed-icons', stored_filename)
+
+        with open(stored_path, 'wb') as f:
+            for i in favicon.iter_content(chunk_size=1024):
+                if i: # filter out keep-alive new chunks
+                    f.write(i)
+                    f.flush()
+        has_icon = True
+    else:
+        has_icon = False
+
+    db.update('feeds',
+              where="feed_id=$feed_id",
+              icon_updated=datetime.utcnow(),
+              has_icon=has_icon,
+              vars={'feed_id': feed_id})
+
+
+def updatefeed(feed):
+    result = feedparser.parse(feed.url, etag=feed.etag, modified=feed.last_modified)
+    if result.status == 304:
+        update_lastupdate(feed.feed_id)
+        return False
+    db.update('feeds',
+              where="feed_id=$feed_id",
+              feed_title=result.feed.get('title', feed.url),
+              etag=result.get('etag', None),
+              last_modified=result.get('modified', None),
+              vars={'feed_id': feed.feed_id})
+    for entry in result.entries:
+        published = entry.get('published_parsed', None)
+        if published:
+            published = datetime.fromtimestamp(mktime(published))
+        updated = entry.get('updated_parsed', None)
+        if updated:
+            updated = datetime.fromtimestamp(mktime(updated))
+        content = None
+        if entry.description:
+            content = entry.description
+        try:
+            for c in entry.content:
+                if content:
+                    content+=c.value
+                else:
+                    content=c.value
+        except AttributeError:
+            #Not an atom feed
+            pass
+        guid = entry.get('id', entry.title)
+        try:
+            item = db.select('items',
+                             where="feed_id=$feed_id AND guid=$guid",
+                             vars={'feed_id': feed.feed_id, 'guid': guid})[0]
+            item_id = item.item_id
+            if not item.updated or updated > item.updated:
+                db.update('items',
+                          where="guid=$guid",
+                          title=entry.title,
+                          description=entry.description,
+                          link=entry.link,
+                          published=published,
+                          updated=updated,
+                          content=content,
+                          vars={'guid': guid})
+        except IndexError:
+            item_id = db.insert('items',
+                                feed_id=feed.feed_id,
+                                title=entry.title,
+                                description=entry.description,
+                                link=entry.link,
+                                published=published,
+                                updated=updated,
+                                content=content,
+                                guid=guid)
+    update_lastupdate(feed.feed_id)
+    if not feed.icon_updated or feed.icon_updated > (datetime.utcnow() - timedelta(days=7)):
+        updatefavicon(feed.url, feed.feed_id)
+
 
 ##
 # API Function:
@@ -436,6 +550,7 @@ def updateFeed(sid, feed_id, **args):
                      where="feed_id=$feed_id",
                      vars={'feed_id': feed_id})[0]
     updatefeed(feed)
+    return {"status":"OK"}
 
 def getPref(sid, pref_name, **args):
     user_id = checksession(sid)
