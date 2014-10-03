@@ -430,11 +430,16 @@ def getConfig(sid, **args):
             'daemon_is_running': daemon_is_running,
             'num_feeds': num_feeds}
 
-def updateFeed(sid, feed_id, **args):
+def updateFeed(sid, feed_id=None, **args):
     user_id = checksession(sid)
-    feed = db.select('feeds',
-                     where="feed_id=$feed_id",
-                     vars={'feed_id': feed_id})[0]
+    if feed_id:
+        feed = db.select('feeds',
+                         where="feed_id=$feed_id",
+                         vars={'feed_id': feed_id})[0]
+    else:
+        feed = db.select('feeds',
+                         limit=1,
+                         order='lastupdate ASC')[0]
     updatefeed(feed)
 
 def getPref(sid, pref_name, **args):
