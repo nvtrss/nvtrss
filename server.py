@@ -210,9 +210,9 @@ def updatefavicon(feed_url, feed_id):
 
 
 def updatefeed(feed):
+    update_lastupdate(feed.feed_id) # If anything goes wrong, we won't retry.
     result = feedparser.parse(feed.url, etag=feed.etag, modified=feed.last_modified)
     if result.status == 304:
-        update_lastupdate(feed.feed_id)
         return False
     db.update('feeds',
               where="feed_id=$feed_id",
@@ -265,7 +265,6 @@ def updatefeed(feed):
                                 updated=updated,
                                 content=content,
                                 guid=guid)
-    update_lastupdate(feed.feed_id)
     if not feed.icon_updated or feed.icon_updated > (datetime.utcnow() - timedelta(days=7)):
         updatefavicon(feed.url, feed.feed_id)
 
