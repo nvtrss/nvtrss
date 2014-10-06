@@ -19,6 +19,7 @@ api_level = -1
 config = ConfigParser.RawConfigParser()
 config.read('nvtrss.cfg')
 debug = config.getboolean('server', 'debug')
+updater_secret = config.get('updater', 'secret')
 
 dbconfig = {}
 for option in config.options('database'):
@@ -544,7 +545,10 @@ def getConfig(sid, **args):
             'num_feeds': num_feeds}
 
 def updateFeed(sid, feed_id=None, **args):
-    user_id = checksession(sid)
+    if updater_secret and updater_secret == args['secret']:
+        pass
+    else:
+        user_id = checksession(sid)
     if feed_id:
         feed = db.select('feeds',
                          where="feed_id=$feed_id",
