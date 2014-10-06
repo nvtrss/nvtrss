@@ -661,7 +661,7 @@ apifunctions = {'getApiLevel': getApiLevel,
 
 class api:
     def POST(self):
-        print "input=%s" % web.data()
+        #print "input=%s" % web.data()
         jsoninput = json.loads(web.data())
         output = {}
         # FIXME: seq in docs is shown as url parameter?
@@ -691,7 +691,7 @@ class api:
         else:
             output['status'] = 1
             
-        print "output=%s" % json.dumps(output)
+        #print "output=%s" % json.dumps(output)
         return json.dumps(output)
             
         
