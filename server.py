@@ -427,9 +427,9 @@ def getCategories(sid, unread_only=None, enable_nested=None, include_empty=None,
     return result
 
 
-def getHeadlines(sid, feed_id=None, limit=None, view_mode=None, **args):
+def getHeadlines(sid, feed_id=None, limit=None, view_mode=None, order_by=None, **args):
     #TODO: parameters: skip, is_cat, show_excerpt, show_content, view_mode
-    #TODO: parameters: include_attachments, since_id, include_nested, order_by
+    #TODO: parameters: include_attachments, since_id, include_nested
     user_id = checksession(sid)
     query = """select * from items
                join feeds
@@ -455,6 +455,10 @@ def getHeadlines(sid, feed_id=None, limit=None, view_mode=None, **args):
         variables['limit'] = 200
     if view_mode in ['adaptive', 'unread']:
         query += str(" and items.read is NULL")
+    if order_by == "date_reverse":
+        query += str(" order by items.updated ASC")
+    else:
+        query += str(" order by items.updated DESC")
     query += str(" limit $limit")
     results = db.query(query, vars=variables)
     headlines = []
