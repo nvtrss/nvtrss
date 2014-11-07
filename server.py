@@ -330,7 +330,7 @@ def getFeeds(sid, cat_id=None, offset=None, limit=None, **args):
     query = """select * from feeds
                where user_id=$user_id"""
     variables = {'user_id': user_id}
-    if cat_id:
+    if cat_id is not None:
         cat_id = int(cat_id)
         if cat_id == -4:
             pass
