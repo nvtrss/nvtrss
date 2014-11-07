@@ -508,7 +508,9 @@ def updateArticle(sid, article_ids, mode, field, **args):
 
 def getArticle(sid, article_id, **args):
     user_id = checksession(sid)
-    article_ids = splitarticleids(article_ids)
+    if not article_id:
+        raise web.notfound()
+    article_ids = splitarticleids(article_id)
     articles = []
     for item_id in article_ids:
         if user_id == ownerofitem(item_id):
