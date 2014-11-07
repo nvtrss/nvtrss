@@ -367,7 +367,7 @@ def getFeeds(sid, cat_id=None, offset=None, limit=None, **args):
                           'title': feed.feed_title,
                           'id': feed.feed_id,
                           'unread': unread,
-                          'has_icon': feed.has_icon,
+                          'has_icon': bool(feed.has_icon),
                           'cat_id': feed.cat_id,
                           'last_updated': lastupdate,
                           'order_id': order_id})
