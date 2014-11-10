@@ -145,7 +145,7 @@ def article(row):
     return {'id': row.item_id,
             'feed_id': row.feed_id,
             'unread': not bool(row.read),
-            'updated': row.updated.strftime('%s'),
+            'updated': row.updated.strftime('%s') if row.updated else 0,
             'title': row.title,
             'link': row.link,
             'feed_title': row.feed_title,
