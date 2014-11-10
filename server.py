@@ -332,11 +332,13 @@ def getFeeds(sid, cat_id=None, offset=None, limit=None, **args):
     variables = {'user_id': user_id}
     if cat_id is not None:
         cat_id = int(cat_id)
-        if cat_id == -4:
+        if cat_id in (-4, -3): #FIXME: Labels
             pass
+        elif cat_id == -2:
+            raise web.notfound()
         elif cat_id == 0:
             query += " and feeds.cat_id IS NULL"
-        else: # TODO: -1, -2, -3?
+        else: # -1 is dealt with below.
             query += " and cat_id=$cat_id"
             variables['cat_id'] = cat_id
     else:
