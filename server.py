@@ -398,17 +398,16 @@ def getCategories(sid, unread_only=None, enable_nested=None, include_empty=None,
                                where="user_id=$user_id",
                                vars={'user_id': user_id})
     result = []
-    result.append({'id': -1,
-                  'title': "Special",
-                  'unread': countunread(user_id),
-                  'cat_id': -1})
-    result.append({'id': 0,
-                  'title': "Uncategorised",
-                  'unread': countunread(user_id, uncategorised=True),
-                  'cat_id': -0})
-    #TODO: order_id
     order_id = 0
+    category = {'id': -1,
+                'title': "Special",
+                'unread': countunread(user_id),
+                'cat_id': -1,
+                'order_id': order_id}
+    if not include_empty or category['unread'] > 0:
+        result.append(category)
     for category in categories:
+        order_id += 1
         unread = db.query("""select count() as count from feeds
                              join items
                                on items.feed_id=feeds.feed_id
@@ -419,11 +418,19 @@ def getCategories(sid, unread_only=None, enable_nested=None, include_empty=None,
                                 'cat_id': category.cat_id})[0].count
         if unread_only and not unread:
             continue
+        if include_empty and unread == 0:
+            continue
         result.append({'id': category.cat_id,
                        'title': category.name,
                        'unread': unread,
                        'order_id': order_id})
-        order_id += 1
+    category = {'id': 0,
+                'title': "Uncategorised",
+                'unread': countunread(user_id, uncategorised=True),
+                'cat_id': 0,
+                'order_id': order_id}
+    if not include_empty or category['unread'] > 0:
+        result.append(category)
     return result
 
 
