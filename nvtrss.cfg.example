@@ -3,6 +3,7 @@ debug: False
 
 [updater]
 frequency: 15
+secret: CHANGE_ME
 debug: False
 
 [database]
