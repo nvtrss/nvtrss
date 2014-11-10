@@ -514,6 +514,7 @@ def updateArticle(sid, article_ids, mode, field, **args):
         else:
             raise OwnershipError("Not a valid session for article.",
                                  sid=sid, user_id=user_id, item_id=item_id)
+    return {'status': 'OK', 'updated': count}
 
 def getArticle(sid, article_id, **args):
     user_id = checksession(sid)
