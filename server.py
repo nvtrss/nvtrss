@@ -519,8 +519,9 @@ def getArticle(sid, article_id, **args):
     articles = []
     for item_id in article_ids:
         if user_id == ownerofitem(item_id):
-            item = db.select('items',
-                             where="item_id=$item_id",
+            item = db.query("""select * from items
+                               join feeds on feeds.feed_id=items.feed_id
+                               where items.item_id=$item_id""",
                              vars={'item_id': item_id})[0]
             articles.append(article(item))
     return articles
