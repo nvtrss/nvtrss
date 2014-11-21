@@ -211,6 +211,7 @@ def updatefavicon(feed_url, feed_id):
 
 
 def updatefeed(feed):
+    # FIXME: Lots of problems here, need to sanitise if test/plain
     update_lastupdate(feed.feed_id) # If anything goes wrong, we won't retry.
     result = feedparser.parse(feed.url, etag=feed.etag, modified=feed.last_modified)
     if result.status == 304:
