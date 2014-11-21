@@ -222,6 +222,7 @@ def updatefeed(feed):
               etag=result.get('etag', None),
               last_modified=result.get('modified', None),
               vars={'feed_id': feed.feed_id})
+    newitems = []
     for entry in result.entries:
         published = entry.get('published_parsed', None)
         if published:
@@ -267,8 +268,10 @@ def updatefeed(feed):
                                 updated=updated,
                                 content=entry.get('content', None),
                                 guid=guid)
+        newitems.append(item_id)
     if not feed.icon_updated or feed.icon_updated > (datetime.utcnow() - timedelta(days=7)):
         updatefavicon(feed.url, feed.feed_id)
+    return newitems
 
 
 ##
@@ -574,8 +577,8 @@ def updateFeed(sid, feed_id=None, **args):
         feed = db.select('feeds',
                          limit=1,
                          order='lastupdate ASC')[0]
-    updatefeed(feed)
-    return {"status":"OK"}
+    newitems = updatefeed(feed)
+    return {"status":"OK", "updated": {int(feed.feed_id): newitems }}
 
 def getPref(sid, pref_name, **args):
     user_id = checksession(sid)
