@@ -120,7 +120,7 @@ def splitarticleids(article_ids):
 
 def freshcutoff():
     threshold = timedelta(hours=3) #better value?
-    return int((datetime.utcnow() - threshold).strftime('%s')) #FIXME: ewww.
+    return datetime.utcnow() - threshold
 
 def countunread(user_id, feed_id=None, uncategorised=False, fresh=False):
     #TODO: freshness... younger than date?
