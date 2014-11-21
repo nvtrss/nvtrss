@@ -251,21 +251,21 @@ def updatefeed(feed):
                 db.update('items',
                           where="guid=$guid",
                           title=entry.title,
-                          description=entry.description,
-                          link=entry.link,
+                          description=entry.get('description', None),
+                          link=entry.get('link', None),
                           published=published,
                           updated=updated,
-                          content=content,
+                          content=entry.get('content', None),
                           vars={'guid': guid})
         except IndexError:
             item_id = db.insert('items',
                                 feed_id=feed.feed_id,
                                 title=entry.title,
-                                description=entry.description,
-                                link=entry.link,
+                                description=entry.get('description', None),
+                                link=entry.get('link', None),
                                 published=published,
                                 updated=updated,
-                                content=content,
+                                content=entry.get('content', None),
                                 guid=guid)
     if not feed.icon_updated or feed.icon_updated > (datetime.utcnow() - timedelta(days=7)):
         updatefavicon(feed.url, feed.feed_id)
