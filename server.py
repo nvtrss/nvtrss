@@ -150,8 +150,8 @@ def article(row):
             'link': row.link,
             'feed_title': row.feed_title,
             #TODO: tags
-            'excerpt': row.description,
-            'content': row.content,
+            'excerpt': row.description if row.content else None,
+            'content': row.content if row.content else row.description,
             }
 
 def checksubscribe(feed_url, user_id):
@@ -231,17 +231,8 @@ def updatefeed(feed):
         if updated:
             updated = datetime.fromtimestamp(mktime(updated))
         content = None
-        if entry.description:
-            content = entry.description
-        try:
-            for c in entry.content:
-                if content:
-                    content+=c.value
-                else:
-                    content=c.value
-        except AttributeError:
-            #Not an atom feed
-            pass
+        if not entry.description:
+            logging.warning("feed_id %s has an entry with no description?" % feed.feed_id)
         guid = entry.get('id', entry.title)
         try:
             item = db.select('items',
