@@ -216,12 +216,6 @@ def updatefeed(feed):
     result = feedparser.parse(feed.url, etag=feed.etag, modified=feed.last_modified)
     if result.status == 304:
         return False
-    db.update('feeds',
-              where="feed_id=$feed_id",
-              feed_title=result.feed.get('title', feed.url),
-              etag=result.get('etag', None),
-              last_modified=result.get('modified', None),
-              vars={'feed_id': feed.feed_id})
     newitems = []
     for entry in result.entries:
         published = entry.get('published_parsed', None)
@@ -262,6 +256,12 @@ def updatefeed(feed):
         newitems.append(item_id)
     if not feed.icon_updated or feed.icon_updated > (datetime.utcnow() - timedelta(days=7)):
         updatefavicon(feed.url, feed.feed_id)
+    db.update('feeds',
+              where="feed_id=$feed_id",
+              feed_title=result.feed.get('title', feed.url),
+              etag=result.get('etag', None),
+              last_modified=result.get('modified', None),
+              vars={'feed_id': feed.feed_id})
     return newitems
 
 
