@@ -561,7 +561,7 @@ def getConfig(sid, **args):
             'num_feeds': num_feeds}
 
 def updateFeed(sid, feed_id=None, **args):
-    if updater_secret and updater_secret == args['secret']:
+    if updater_secret and 'secret' in args and updater_secret == args['secret']:
         pass
     else:
         user_id = checksession(sid)
