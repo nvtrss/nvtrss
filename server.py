@@ -20,6 +20,7 @@ config = ConfigParser.RawConfigParser()
 config.read('nvtrss.cfg')
 debug = config.getboolean('server', 'debug')
 updater_secret = config.get('updater', 'secret')
+freshhours = config.getint('server', 'freshhours')
 
 dbconfig = {}
 for option in config.options('database'):
@@ -119,7 +120,7 @@ def splitarticleids(article_ids):
         return [int(article_ids),]
 
 def freshcutoff():
-    threshold = timedelta(hours=3) #better value?
+    threshold = timedelta(hours=freshhours)
     return datetime.utcnow() - threshold
 
 def countunread(user_id, feed_id=None, uncategorised=False, fresh=False):
