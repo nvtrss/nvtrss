@@ -323,10 +323,11 @@ def getUnread(sid, **args):
     result = countunread(user_id)
     return {'unread':str(result)}
 
-def getFeeds(sid, cat_id=None, offset=None, limit=None, **args):
+def getFeeds(sid, cat_id=None, offset=None, limit=None, unread_only=True, **args):
     user_id = checksession(sid)
     #TODO: parameters: cat_id, unread_only, offset, include_nested
-    query = """select * from feeds
+    query = """select count(*) as count_unread, feeds.* from items
+               left join feeds on items.feed_id = feeds.feed_id
                where user_id=$user_id"""
     variables = {'user_id': user_id}
     if cat_id is not None:
@@ -342,10 +343,14 @@ def getFeeds(sid, cat_id=None, offset=None, limit=None, **args):
             variables['cat_id'] = cat_id
     else:
         cat_id = None
+    query += " and items.read IS NULL"
     # Splice?
     if limit:
         variables['limit'] = int(limit)
         query += " limit $limit"
+    query += " group by items.feed_id"
+    if unread_only:
+        query += " having count_unread > 0"
     feeds = []
     if cat_id == -1:
         # We only want specials...
@@ -359,7 +364,6 @@ def getFeeds(sid, cat_id=None, offset=None, limit=None, **args):
         #TODO: feeds order_id
         order_id = 0
         for feed in result:
-            unread = countunread(user_id, feed.feed_id)
             if feed.lastupdate:
                 lastupdate = feed.lastupdate.strftime("%s")
             else:
@@ -367,7 +371,7 @@ def getFeeds(sid, cat_id=None, offset=None, limit=None, **args):
             feeds.append({'feed_url': feed.url,
                           'title': feed.feed_title,
                           'id': feed.feed_id,
-                          'unread': unread,
+                          'unread': feed.count_unread,
                           'has_icon': bool(feed.has_icon),
                           'cat_id': feed.cat_id,
                           'last_updated': lastupdate,
@@ -389,15 +393,17 @@ def getCategories(sid, unread_only=None, enable_nested=None, include_empty=None,
     # TODO: parameters: include_empty
     user_id = checksession(sid)
         
+    query = """SELECT count(*) AS count_unread, categories.* FROM items
+               LEFT JOIN feeds ON items.feed_id = feeds.feed_id
+               LEFT JOIN categories ON categories.cat_id = feeds.cat_id
+               WHERE categories.user_id=$user_id
+               AND items.read IS NULL"""
     if enable_nested:
-        categories = db.select('categories',
-                               where="""user_id=$user_id
-                                        AND parent IS NULL""",
-                               vars={'user_id': user_id})
-    else:
-        categories = db.select('categories',
-                               where="user_id=$user_id",
-                               vars={'user_id': user_id})
+        query += " AND parent IS NULL"""
+    query += " GROUP BY categories.cat_id"
+    if unread_only:
+        query += " HAVING count_unread > 0"
+    categories = db.query(query, vars={'user_id': user_id})
     result = []
     order_id = 0
     category = {'id': -1,
@@ -409,21 +415,9 @@ def getCategories(sid, unread_only=None, enable_nested=None, include_empty=None,
         result.append(category)
     for category in categories:
         order_id += 1
-        unread = db.query("""select count() as count from feeds
-                             join items
-                               on items.feed_id=feeds.feed_id
-                             where feeds.cat_id=$cat_id
-                               and feeds.user_id=$user_id
-                               and items.read is NULL;""",
-                          vars={'user_id': user_id,
-                                'cat_id': category.cat_id})[0].count
-        if unread_only and not unread:
-            continue
-        if include_empty and unread == 0:
-            continue
         result.append({'id': category.cat_id,
                        'title': category.name,
-                       'unread': unread,
+                       'unread': category.count_unread,
                        'order_id': order_id})
     category = {'id': 0,
                 'title': "Uncategorised",
