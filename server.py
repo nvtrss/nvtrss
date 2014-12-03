@@ -229,6 +229,9 @@ def updatefeed(feed):
         if not entry.description:
             logging.warning("feed_id %s has an entry with no description?" % feed.feed_id)
         guid = entry.get('id', entry.title)
+        content = entry.get('content', [{}])[0].get('value', None)
+        description = entry.get('description', None)
+        link = entry.get('link', None)
         try:
             item = db.select('items',
                              where="feed_id=$feed_id AND guid=$guid",
@@ -238,21 +241,21 @@ def updatefeed(feed):
                 db.update('items',
                           where="guid=$guid",
                           title=entry.title,
-                          description=entry.get('description', None),
-                          link=entry.get('link', None),
+                          description=description,
+                          link=link,
                           published=published,
                           updated=updated,
-                          content=entry.get('content', None),
+                          content=content,
                           vars={'guid': guid})
         except IndexError:
             item_id = db.insert('items',
                                 feed_id=feed.feed_id,
                                 title=entry.title,
-                                description=entry.get('description', None),
-                                link=entry.get('link', None),
+                                description=description,
+                                link=link,
                                 published=published,
                                 updated=updated,
-                                content=entry.get('content', None),
+                                content=content,
                                 guid=guid)
         newitems.append(item_id)
     if not feed.icon_updated or feed.icon_updated > (datetime.utcnow() - timedelta(days=7)):
