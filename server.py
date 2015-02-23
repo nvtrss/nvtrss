@@ -554,10 +554,11 @@ def getConfig(sid, **args):
             'daemon_is_running': daemon_is_running,
             'num_feeds': num_feeds}
 
-def updateFeed(sid, feed_id=None, **args):
+def updateFeed(sid, feed_id=None, background=True, **args):
     if updater_secret and 'secret' in args and updater_secret == args['secret']:
         pass
     else:
+        background = True
         user_id = checksession(sid)
     if feed_id:
         feed = db.select('feeds',
@@ -567,8 +568,11 @@ def updateFeed(sid, feed_id=None, **args):
         feed = db.select('feeds',
                          limit=1,
                          order='lastupdate ASC')[0]
-    newitems = updatefeed(feed)
-    return {"status":"OK", "updated": {int(feed.feed_id): newitems }}
+    if background:
+        newitems = updatefeed(feed)
+        return {"status":"OK", "updated": {int(feed.feed_id): newitems }}
+    else:
+        return feed.feed_id, feed.url
 
 def getPref(sid, pref_name, **args):
     user_id = checksession(sid)
