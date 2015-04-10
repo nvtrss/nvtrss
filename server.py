@@ -688,6 +688,7 @@ class api:
             output['seq'] = 0
 
         web.header('Content-Type', 'text/json')
+        web.header('Cache-Control', 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0')
 
         # If not set, set it so we can check for... nothing and not KeyError.
         if not 'sid' in jsoninput:
