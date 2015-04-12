@@ -6,8 +6,9 @@ import uuid
 import ConfigParser
 import feedparser
 import requests
+import argparse
 
-from time import mktime
+from time import mktime, struct_time
 from datetime import datetime, timedelta
 from urlparse import urlparse, urlunparse, ParseResult
 from os import path
@@ -211,12 +212,18 @@ def updatefavicon(feed_url, feed_id):
               vars={'feed_id': feed_id})
 
 
-def updatefeed(feed):
+def updatefeed(feed, foreground=True):
     # FIXME: Lots of problems here, need to sanitise if test/plain
-    update_lastupdate(feed.feed_id) # If anything goes wrong, we won't retry.
     result = feedparser.parse(feed.url, etag=feed.etag, modified=feed.last_modified)
     if result.status == 304:
         return False
+    if foreground:
+        return processentries(feed, result)
+    else:
+        return result
+
+def processentries(feed, result):
+    """result is the feedparser.parse() result"""
     newitems = []
     for entry in result.get('entries'):
         published = entry.get('published_parsed', None)
@@ -268,6 +275,35 @@ def updatefeed(feed):
               last_modified=result.get('modified', None),
               vars={'feed_id': feed.feed_id})
     return newitems
+
+def json_serial(obj):
+    """JSON serializer for objects not serializable by default json code
+
+    http://stackoverflow.com/a/22238613/601779"""
+
+    if isinstance(obj, struct_time):
+        return list(obj)
+    if isinstance(obj, datetime):
+        return obj.timetuple()
+    if isinstance(obj, feedparser.NonXMLContentType):
+        return repr(obj)
+    print "not serialisable:", type(obj), "|", obj
+    raise
+
+def separateupdate(url):
+    payload = {"op": "updateFeed", "secret": updater_secret, "background": False}
+    result = requests.post(url, data=json.dumps(payload))
+    if result.status_code != requests.codes.ok:
+        return result.text
+    feed = result.json['content']['feed']
+    result = feedparser.parse(feed['url'], etag=feed['etag'], modified=feed['last_modified'])
+    payload = {"op": "updateFeed",
+               "secret": updater_secret,
+               "background": False,
+               "feed_id": feed['feed_id'],
+               "result": result}
+    result = requests.post(url, data=json.dumps(payload, default=json_serial))
+    return result.json
 
 
 ##
@@ -555,7 +591,7 @@ def getConfig(sid, **args):
             'daemon_is_running': daemon_is_running,
             'num_feeds': num_feeds}
 
-def updateFeed(sid, feed_id=None, background=True, **args):
+def updateFeed(sid, feed_id=None, background=True, result=None, **args):
     if updater_secret and 'secret' in args and updater_secret == args['secret']:
         pass
     else:
@@ -569,11 +605,19 @@ def updateFeed(sid, feed_id=None, background=True, **args):
         feed = db.select('feeds',
                          limit=1,
                          order='lastupdate ASC')[0]
+    update_lastupdate(feed.feed_id) # If anything goes wrong, we won't retry.
     if background:
         newitems = updatefeed(feed)
-        return {"status":"OK", "updated": {int(feed.feed_id): newitems }}
     else:
-        return feed.feed_id, feed.url
+        if result:
+            newitems = processentries(feed, result)
+        else:
+            return {"status":"OK", "feed": {"feed_id": feed.feed_id,
+                                            "url": feed.url,
+                                            "etag": feed.etag,
+                                            "last_modified": feed.last_modified
+                                            }}
+    return {"status":"OK", "updated": {int(feed.feed_id): newitems }}
 
 def getPref(sid, pref_name, **args):
     user_id = checksession(sid)
@@ -714,9 +758,16 @@ class api:
         return json.dumps(output)
             
         
-        
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--url', dest='updater', metavar='URL', default=False, action="store", help="don't run the server, run an updater")
+    args = parser.parse_args()
+    if args.updater:
+        print separateupdate(args.updater)
+    else:
+        app.run()
 
 if __name__ == "__main__":
-    app.run()
+    main()
 
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
