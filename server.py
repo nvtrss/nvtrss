@@ -218,7 +218,7 @@ def updatefeed(feed):
     if result.status == 304:
         return False
     newitems = []
-    for entry in result.entries:
+    for entry in result.get('entries'):
         published = entry.get('published_parsed', None)
         if published:
             published = datetime.fromtimestamp(mktime(published))
@@ -226,9 +226,10 @@ def updatefeed(feed):
         if updated:
             updated = datetime.fromtimestamp(mktime(updated))
         content = None
-        if not entry.description:
-            logging.warning("feed_id %s has an entry with no description?" % feed.feed_id)
-        guid = entry.get('id', entry.title)
+        if not entry.get('description', None):
+            #logging.warning("feed_id %s has an entry with no description?" % feed.feed_id)
+            pass
+        guid = entry.get('id', entry.get('title', None))
         content = entry.get('content', [{}])[0].get('value', None)
         description = entry.get('description', None)
         link = entry.get('link', None)
@@ -240,7 +241,7 @@ def updatefeed(feed):
             if not item.updated or updated > item.updated:
                 db.update('items',
                           where="guid=$guid",
-                          title=entry.title,
+                          title=entry.get('title'),
                           description=description,
                           link=link,
                           published=published,
@@ -250,7 +251,7 @@ def updatefeed(feed):
         except IndexError:
             item_id = db.insert('items',
                                 feed_id=feed.feed_id,
-                                title=entry.title,
+                                title=entry.get('title'),
                                 description=description,
                                 link=link,
                                 published=published,
@@ -262,7 +263,7 @@ def updatefeed(feed):
         updatefavicon(feed.url, feed.feed_id)
     db.update('feeds',
               where="feed_id=$feed_id",
-              feed_title=result.feed.get('title', feed.url),
+              feed_title=result.get('feed').get('title', feed.url),
               etag=result.get('etag', None),
               last_modified=result.get('modified', None),
               vars={'feed_id': feed.feed_id})
