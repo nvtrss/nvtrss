@@ -296,16 +296,20 @@ def separateupdate(url):
     payload = {"op": "updateFeed", "secret": updater_secret, "background": False}
     result = requests.post(url, data=json.dumps(payload))
     if result.status_code != requests.codes.ok:
-        return result.text
+        return "Initial Local Request", url, result.text
     feed = result.json['content']['feed']
     result = feedparser.parse(feed['url'], etag=feed['etag'], modified=feed['last_modified'])
+    if result.bozo:
+        return "Feed Fetch", feed['url'], result.bozo_exception
     payload = {"op": "updateFeed",
                "secret": updater_secret,
                "background": False,
                "feed_id": feed['feed_id'],
                "result": result}
     result = requests.post(url, data=json.dumps(payload, default=json_serial))
-    return result.json
+    if result.status_code != requests.codes.ok:
+        return "POST to local", feed['url'], result.text
+    return feed['url'], result.json
 
 
 ##
