@@ -232,6 +232,8 @@ def processentries(feed, result):
         updated = entry.get('updated_parsed', None)
         if updated:
             updated = datetime.fromtimestamp(mktime(updated))
+        else:
+            updated = published
         content = None
         if not entry.get('description', None):
             #logging.warning("feed_id %s has an entry with no description?" % feed.feed_id)
