@@ -232,8 +232,6 @@ def processentries(feed, result):
         updated = entry.get('updated_parsed', None)
         if updated:
             updated = datetime.fromtimestamp(mktime(updated))
-        else:
-            updated = datetime.utcnow()
         content = None
         if not entry.get('description', None):
             #logging.warning("feed_id %s has an entry with no description?" % feed.feed_id)
@@ -247,7 +245,7 @@ def processentries(feed, result):
                              where="feed_id=$feed_id AND guid=$guid",
                              vars={'feed_id': feed.feed_id, 'guid': guid})[0]
             item_id = item.item_id
-            if not item.updated or updated > item.updated:
+            if not item.updated or updated is None or updated > item.updated:
                 db.update('items',
                           where="guid=$guid",
                           title=entry.get('title'),
