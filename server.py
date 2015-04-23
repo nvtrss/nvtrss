@@ -240,7 +240,7 @@ def processentries(feed, result):
             pass
         guid = entry.get('id', entry.get('title', None))
         content = entry.get('content', [{}])[0].get('value', None)
-        description = entry.get('description', None)
+        description = entry.get('summary', None)
         link = entry.get('link', None)
         try:
             item = db.select('items',
