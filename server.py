@@ -15,6 +15,7 @@ from urlparse import urlparse, urlunparse, ParseResult
 from os import path
 from lxml import etree
 from StringIO import StringIO
+from passlib.apps import custom_app_context as pwd_context
 
 version = "0.0.1"
 api_level = -1
@@ -323,20 +324,22 @@ def getVersion(sid, **args):
     checksession(sid)
     return {'version': version}
 
-def login(user=None, **args):
+def login(user=None, password=None, **args):
     #TODO: session handling
     try:
-        user_id = db.select('users',
-                            what='user_id',
-                            where="username=$username",
-                            vars={'username': user}
-                            )[0].user_id
+        result = db.select('users',
+                           what='user_id,hash',
+                           where="username=$username",
+                           vars={'username': user}
+                           )[0]
     except IndexError:
+        raise ApiError("LOGIN_ERROR")
+    if not pwd_context.verify(password, result.hash):
         raise ApiError("LOGIN_ERROR")
     sid = uuid.uuid1().hex
     db.insert('sessions',
               sid=sid,
-              user_id=user_id,
+              user_id=result.user_id,
               lastused=datetime.utcnow())
     return {'session_id': sid,
             'api_level': api_level}
