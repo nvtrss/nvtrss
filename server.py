@@ -236,9 +236,6 @@ def processentries(feed, result):
         else:
             updated = published
         content = None
-        if not entry.get('description', None):
-            #logging.warning("feed_id %s has an entry with no description?" % feed.feed_id)
-            pass
         guid = entry.get('id', entry.get('title', None))
         content = entry.get('content', [{}])[0].get('value', None)
         description = entry.get('summary', None)
