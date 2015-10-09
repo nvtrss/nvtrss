@@ -499,9 +499,9 @@ def getHeadlines(sid, feed_id=None, limit=None, view_mode=None, order_by=None, *
     if view_mode in ['adaptive', 'unread']:
         query += str(" and items.read is NULL")
     if order_by == "date_reverse":
-        query += str(" order by items.updated ASC")
+        query += str(" order by items.updated ASC, items.published ASC")
     else:
-        query += str(" order by items.updated DESC")
+        query += str(" order by items.updated DESC, items.published DESC")
     query += str(" limit $limit")
     results = db.query(query, vars=variables)
     headlines = []
