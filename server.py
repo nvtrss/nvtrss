@@ -7,6 +7,7 @@ import ConfigParser
 import feedparser
 import requests
 import argparse
+import socket
 
 from time import mktime, struct_time
 from datetime import datetime, timedelta
@@ -769,6 +770,7 @@ def main():
     parser.add_argument('--url', dest='updater', metavar='URL', default=False, action="store", help="don't run the server, run an updater")
     args = parser.parse_args()
     if args.updater:
+        socket.setdefaulttimeout(10)
         print separateupdate(args.updater)
     else:
         app.run()
