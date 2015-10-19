@@ -47,3 +47,4 @@ CREATE TABLE sessions (user_id,
                        FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE
                       );
 CREATE TABLE users (user_id INTEGER PRIMARY KEY AUTOINCREMENT,username,hash);
+CREATE INDEX idx_items_timestamps on items(updated,published);
