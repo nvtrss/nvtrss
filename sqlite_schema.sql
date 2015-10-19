@@ -41,12 +41,9 @@ CREATE TABLE items (feed_id,
                     FOREIGN KEY(feed_id) REFERENCES feeds(feed_id) ON DELETE CASCADE,
                     UNIQUE(feed_id, guid)
                    );
-
-CREATE TABLE users (user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username);
-
 CREATE TABLE sessions (user_id,
                        sid,
                        lastused timestamp,
                        FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE
                       );
+CREATE TABLE users (user_id INTEGER PRIMARY KEY AUTOINCREMENT,username,hash);
