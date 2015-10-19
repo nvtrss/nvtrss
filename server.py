@@ -500,7 +500,7 @@ def getHeadlines(sid, feed_id=None, limit=None, view_mode=None, order_by=None, *
         else:
             variables['limit'] = 20
     else:
-        variables['limit'] = 200
+        variables['limit'] = 20
     if view_mode in ['adaptive', 'unread']:
         query += str(" and items.read is NULL")
     if order_by == "date_reverse":
