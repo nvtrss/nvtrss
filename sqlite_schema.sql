@@ -7,7 +7,7 @@ DROP TABLE IF EXISTS sessions;
 CREATE TABLE categories (cat_id INTEGER PRIMARY KEY AUTOINCREMENT,
                          name,
                          parent,
-                         user_id,
+                         user_id INTEGER,
                          FOREIGN KEY(parent) REFERENCES categories(cat_id) ON DELETE CASCADE,
                          FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE,
                          UNIQUE(user_id, name, parent)
@@ -17,8 +17,8 @@ CREATE TABLE feeds (feed_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     url,
                     lastupdate timestamp,
                     feed_title,
-                    cat_id,
-                    user_id,
+                    cat_id INTEGER,
+                    user_id INTEGER,
                     etag,
                     last_modified,
                     has_icon,
@@ -26,8 +26,7 @@ CREATE TABLE feeds (feed_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE,
                     UNIQUE(user_id, url)
                    );
-
-CREATE TABLE items (feed_id,
+CREATE TABLE items (feed_id INTEGER,
                     guid,
                     title,
                     description,
@@ -41,7 +40,7 @@ CREATE TABLE items (feed_id,
                     FOREIGN KEY(feed_id) REFERENCES feeds(feed_id) ON DELETE CASCADE,
                     UNIQUE(feed_id, guid)
                    );
-CREATE TABLE sessions (user_id,
+CREATE TABLE sessions (user_id INTEGER,
                        sid,
                        lastused timestamp,
                        FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE
