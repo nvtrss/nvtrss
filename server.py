@@ -497,6 +497,8 @@ def getHeadlines(sid, feed_id=None, limit=None, view_mode=None, order_by=None, *
         limit = int(limit)
         if limit < 201:
             variables['limit'] = limit
+        else:
+            variables['limit'] = 20
     else:
         variables['limit'] = 200
     if view_mode in ['adaptive', 'unread']:
