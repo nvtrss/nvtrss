@@ -477,10 +477,11 @@ def getHeadlines(sid, feed_id=None, limit=None, view_mode=None, order_by=None, *
     #TODO: parameters: skip, is_cat, show_excerpt, show_content, view_mode
     #TODO: parameters: include_attachments, since_id, include_nested
     user_id = checksession(sid)
-    query = """select * from items
-               join feeds
-                 on feeds.feed_id=items.feed_id
-               where feeds.user_id=$user_id"""
+    query = """select * from feeds,items """
+    if dbconfig['dbn'] == 'sqlite':
+        query += str(" indexed by idx_items_timestamps")
+    query += str(""" where feeds.feed_id=items.feed_id
+                       and feeds.user_id=$user_id""")
     variables = {'user_id': user_id}
     if feed_id:
         feed_id = int(feed_id)
