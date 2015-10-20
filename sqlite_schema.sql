@@ -47,3 +47,4 @@ CREATE TABLE sessions (user_id INTEGER,
                       );
 CREATE TABLE users (user_id INTEGER PRIMARY KEY AUTOINCREMENT,username,hash);
 CREATE INDEX idx_items_timestamps on items(updated,published);
+CREATE INDEX idx_items_unread on items(feed_id,read,published);
