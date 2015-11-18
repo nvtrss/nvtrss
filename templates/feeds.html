@@ -1,0 +1,14 @@
+$def with (result)
+<table border="1">
+    <tr>
+        <b>
+            <td>ID</td>
+            <td>URL</td>
+        </b>
+    </tr>
+$for row in result:
+    <tr>
+        <td>$row.feed_id</td>
+        <td>$row.url</td>
+    <tr>
+</table>

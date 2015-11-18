@@ -16,6 +16,7 @@ from os import path
 from lxml import etree
 from StringIO import StringIO
 from passlib.apps import custom_app_context as pwd_context
+from base64 import b64decode
 
 version = "0.0.1"
 api_level = -1
@@ -35,8 +36,11 @@ db = web.database(**dbconfig)
 urls = (
     '/api', 'api',
     '/api/', 'api',
+    '/feeds', 'feeds',
 )
 app = web.application(urls, globals())
+
+render = web.template.render('templates/')
 
 db.printing = debug
 web.config.debug = debug
@@ -97,6 +101,30 @@ def checksession(sid):
                   where="lastused < $sessionexpirey",
                   vars={'sessionexpirey': datetime.utcnow() - timedelta(hours=1)})
         raise SessionError("Not a valid session", sid)
+
+def checkweblogin():
+    """Called from web pages (not api) to check authentication."""
+    sid = web.cookies().get('sid')
+    if not sid:
+        try:
+            username, password = b64decode(web.ctx.env['HTTP_AUTHORIZATION'][6:]).split(':')
+            sid = login(username, password)['session_id']
+            web.setcookie('sid', sid, maxsessionage)
+        except KeyError:
+            pass
+        except ApiError:
+            pass
+    user_id = None
+    if sid:
+        try:
+            user_id = checksession(sid)
+        except SessionError:
+            pass
+    if not user_id:
+        web.header('WWW-Authenticate','Basic realm="nvtrss"')
+        raise web.HTTPError("401 unauthorized", {}, "Please provide a username & password.")
+    return user_id
+
 
 def ownerofcat(cat_id):
     return db.select('categories',
@@ -767,6 +795,13 @@ class api:
             
         #print "output=%s" % json.dumps(output)
         return json.dumps(output)
+
+class feeds:
+    def GET(self):
+        user_id = checkweblogin()
+        result = db.select("feeds", where="user_id=$user_id", vars={'user_id': user_id})
+        return render.feeds(result)
+        
             
         
 def main():
