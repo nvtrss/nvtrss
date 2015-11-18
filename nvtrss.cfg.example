@@ -1,6 +1,7 @@
 [server]
 debug: False
 freshhours: 24
+maxsessionage: 60
 
 [updater]
 frequency: 15

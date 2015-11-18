@@ -24,6 +24,7 @@ config.read('nvtrss.cfg')
 debug = config.getboolean('server', 'debug')
 updater_secret = config.get('updater', 'secret')
 freshhours = config.getint('server', 'freshhours')
+maxsessionage = config.getint('server', 'maxsessionage') #minutes
 
 dbconfig = {}
 for option in config.options('database'):
@@ -84,7 +85,7 @@ def checksession(sid):
     except IndexError:
         raise SessionError("Not a valid session", sid)
     sessionage = datetime.utcnow() - session.lastused
-    if sessionage < timedelta(hours=1):
+    if sessionage < timedelta(minutes=maxsessionage):
         if sessionage > timedelta(minutes=5):
             db.update('sessions',
                       where="sid=$sid",
