@@ -1,4 +1,4 @@
-$def with (result)
+$def with (feedlist, feedform)
 <table border="1">
     <tr>
         <b>
@@ -6,9 +6,16 @@ $def with (result)
             <td>URL</td>
         </b>
     </tr>
-$for row in result:
+$for row in feedlist:
     <tr>
         <td>$row.feed_id</td>
         <td>$row.url</td>
     <tr>
 </table>
+<p>
+<h2>Add new feed:</h2>
+<form name="main" method="post">
+$if not feedform.valid: <p class="error">Try again, AmeriCAN:</p> 
+$:feedform.render()
+<input type="submit" />
+</form>

@@ -123,7 +123,7 @@ def checkweblogin():
     if not user_id:
         web.header('WWW-Authenticate','Basic realm="nvtrss"')
         raise web.HTTPError("401 unauthorized", {}, "Please provide a username & password.")
-    return user_id
+    return user_id, sid
 
 
 def ownerofcat(cat_id):
@@ -796,12 +796,24 @@ class api:
         #print "output=%s" % json.dumps(output)
         return json.dumps(output)
 
+FEEDFORM = web.form.Form(
+    web.form.Textbox('url')
+    )
+
 class feeds:
     def GET(self):
-        user_id = checkweblogin()
-        result = db.select("feeds", where="user_id=$user_id", vars={'user_id': user_id})
-        return render.feeds(result)
-        
+        user_id, sid = checkweblogin()
+        feedlist = db.select("feeds", where="user_id=$user_id", vars={'user_id': user_id})
+        feedform = FEEDFORM()
+        return render.feeds(feedlist, feedform)
+    def POST(self):
+        user_id, sid = checkweblogin()
+        feedform = FEEDFORM()
+        if not feedform.validates():
+            return RENDER.formtest(feedform)
+        subscribeToFeed(sid, feedform.d.url)
+        raise web.seeother(web.ctx.homepath + web.ctx.path)
+
             
         
 def main():
