@@ -797,7 +797,10 @@ class api:
         return json.dumps(output)
 
 FEEDFORM = web.form.Form(
-    web.form.Textbox('url')
+    web.form.Textbox('url'),
+    web.form.Radio('action',
+                   ['add', 'delete'],
+                   value="add")
     )
 
 class feeds:
@@ -811,7 +814,11 @@ class feeds:
         feedform = FEEDFORM()
         if not feedform.validates():
             return RENDER.formtest(feedform)
-        subscribeToFeed(sid, feedform.d.url)
+        if feedform.d.action == 'add':
+            subscribeToFeed(sid, feedform.d.url)
+        elif feedform.d.action == 'delete':
+            feed_id = db.select("feeds", where="user_id=$user_id AND url=$url", what="feed_id", vars={'user_id': user_id, 'url': feedform.d.url})[0].feed_id
+            unsubscribeFeed(sid, feed_id)
         raise web.seeother(web.ctx.path)
 
             
