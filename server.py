@@ -691,7 +691,7 @@ def catchupFeed(sid, feed_id, is_cat=None, **args):
 def unsubscribeFeed(sid, feed_id, **args):
     user_id = checksession(sid)
     if user_id == owneroffeed(feed_id):
-        db.delete('feeds', where="feed_id=$feed_id")
+        db.delete('feeds', where="feed_id=$feed_id", vars={'feed_id': feed_id})
     else:
         raise OwnershipError("Not a valid session for feed.",
                              user_id=user_id, feed_id=feed_id)
