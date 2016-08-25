@@ -812,7 +812,7 @@ class feeds:
         if not feedform.validates():
             return RENDER.formtest(feedform)
         subscribeToFeed(sid, feedform.d.url)
-        raise web.seeother(web.ctx.homepath + web.ctx.path)
+        raise web.seeother(web.ctx.path)
 
             
         
