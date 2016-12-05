@@ -769,7 +769,34 @@ def getFeedTree(sid, **args): #TODO: include_empty
                                                     'icon': False, #TODO: icon
                                                     #TODO: 'param': "16:19"
                                                     })
-
+    category_dict[-1] = {'id':"CAT:-1",
+                         'items': [
+                                    {'id': 'FEED:-4',
+                                     'bare_id': -4,
+                                     #TODO: 'auxcounter': 0 ??
+                                     'name': "All articles",
+                                     #TODO: 'checkbox': False, ??
+                                     'unread': countunread(user_id),
+                                     'error': '',
+                                     'icon': False, #TODO: icon
+                                     #TODO: 'param': "16:19"
+                                     },
+                                    {'id': 'FEED:-3',
+                                     'bare_id': -3,
+                                     #TODO: 'auxcounter': 0 ??
+                                     'name': "Fresh articles",
+                                     #TODO: 'checkbox': False, ??
+                                     'unread': countunread(user_id, fresh=True),
+                                     'error': '',
+                                     'icon': False, #TODO: icon
+                                     #TODO: 'param': "16:19"
+                                     },
+                                    ],
+                         'name': "Special",
+                         'type': "category",
+                         'unread': 0,
+                         'bare_id': -1,
+                         }
     content = { 'categories': {
                                'identifier': 'id',
                                'label': 'name',
