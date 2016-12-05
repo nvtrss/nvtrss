@@ -26,6 +26,7 @@ debug = config.getboolean('server', 'debug')
 updater_secret = config.get('updater', 'secret')
 freshhours = config.getint('server', 'freshhours')
 maxsessionage = config.getint('server', 'maxsessionage') #minutes
+update_dateless = config.getboolean('updater', 'update_dateless')
 
 dbconfig = {}
 for option in config.options('database'):
@@ -275,14 +276,14 @@ def processentries(feed, result):
                              where="feed_id=$feed_id AND guid=$guid",
                              vars={'feed_id': feed.feed_id, 'guid': guid})[0]
             item_id = item.item_id
-            if not item.updated or updated is None or updated > item.updated:
+            if updated > item.updated or (update_dateless and updated is None):
                 db.update('items',
                           where="guid=$guid",
                           title=entry.get('title'),
                           description=description,
                           link=link,
-                          published=published,
-                          updated=updated,
+                          published=published if published else datetime.utcnow(),
+                          updated=updated if updated else datetime.utcnow(),
                           content=content,
                           vars={'guid': guid})
         except IndexError:
@@ -291,19 +292,23 @@ def processentries(feed, result):
                                 title=entry.get('title'),
                                 description=description,
                                 link=link,
-                                published=published,
-                                updated=updated,
+                                published=published if published else datetime.utcnow(),
+                                updated=updated if updated else datetime.utcnow(),
                                 content=content,
                                 guid=guid)
         newitems.append(item_id)
     if not feed.icon_updated or feed.icon_updated > (datetime.utcnow() - timedelta(days=7)):
         updatefavicon(feed.url, feed.feed_id)
-    db.update('feeds',
-              where="feed_id=$feed_id",
-              feed_title=result.get('feed').get('title', feed.url),
-              etag=result.get('etag', None),
-              last_modified=result.get('modified', None),
-              vars={'feed_id': feed.feed_id})
+    feed_title = result.get('feed').get('title', feed.url)
+    etag = result.get('etag', None)
+    last_modified = result.get('modified', None)
+    if etag or last_modified or feed_title != feed.feed_title:
+        db.update('feeds',
+                  where="feed_id=$feed_id",
+                  feed_title=feed_title,
+                  etag=etag,
+                  last_modified=last_modified,
+                  vars={'feed_id': feed.feed_id})
     return newitems
 
 def json_serial(obj):
