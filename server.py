@@ -732,11 +732,56 @@ def getCounters(sid, output_mode, **args):
 
     return counters
 
+def getFeedTree(sid, **args): #TODO: include_empty
+    user_id = checksession(sid)
+        
+    query = """SELECT count(*) AS count_unread, categories.*, feeds.*
+               FROM items
+               LEFT JOIN feeds ON items.feed_id = feeds.feed_id
+               LEFT JOIN categories ON categories.cat_id = feeds.cat_id
+               WHERE categories.user_id=$user_id
+               AND items.read IS NULL
+               GROUP BY feeds.feed_id
+               ORDER BY categories.cat_id ASC, feeds.feed_id ASC"""
+    feeds = db.query(query, vars={'user_id': user_id})
+
+    category_dict = {}
+    for item in feeds:
+        if item.cat_id not in category_dict:
+            category_dict[item.cat_id] = {'id':"CAT:%i" % item.cat_id,
+                                          'bare_id': item.cat_id,
+                                          #TODO: 'auxcounter': 0 ??
+                                          'name': item.name,
+                                          'items': [],
+                                          #TODO: 'checkbox': False, ??
+                                          'type': 'category',
+                                          'unread': 0,
+                                          'child_unread': 0,
+                                          #TODO: 'param': '(1 feed)' ??
+                                          }
+        category_dict[item.cat_id]['items'].append({'id': 'FEED:%i' % item.feed_id,
+                                                    'bare_id': item.feed_id,
+                                                    #TODO: 'auxcounter': 0 ??
+                                                    'name': item.feed_title,
+                                                    #TODO: 'checkbox': False, ??
+                                                    'unread': 0,
+                                                    'error': '',
+                                                    'icon': False, #TODO: icon
+                                                    #TODO: 'param': "16:19"
+                                                    })
+
+    content = { 'categories': {
+                               'identifier': 'id',
+                               'label': 'name',
+                               'items': [category_dict[category] for category in category_dict]
+                               }
+               }
+    return content
+
 
 #TODO: getLabels 1
 #TODO: setArticleLabel 1
 #TODO: shareToPublished 4
-#TODO: getFeedTree 5
 
 
     
@@ -758,6 +803,7 @@ apifunctions = {'getApiLevel': getApiLevel,
                 'catchupFeed': catchupFeed,
                 'unsubscribeFeed': unsubscribeFeed,
                 'getCounters': getCounters,
+                'getFeedTree': getFeedTree,
                }
 
 class api:
