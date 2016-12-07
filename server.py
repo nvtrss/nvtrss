@@ -613,7 +613,7 @@ def subscribeToFeed(sid, feed_url, **args):
     if checksubscribe(feed_url, user_id):
         raise ApiError("Already susbcribed to this feed.")
     #TODO: cat_id
-    db.insert('feeds', url=urlunparse(feed_url), user_id=user_id, cat_id=0)
+    db.insert('feeds', url=urlunparse(feed_url), user_id=user_id)
 
 def getConfig(sid, **args):
     user_id = checksession(sid)
