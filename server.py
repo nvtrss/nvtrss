@@ -758,8 +758,8 @@ def getFeedTree(sid, **args): #TODO: include_empty
         else:
             cat_id = 0
             cat_name = "Uncategorised"
-        if item.cat_id not in category_dict:
-            category_dict[item.cat_id] = {'id':"CAT:%i" % cat_id,
+        if cat_id not in category_dict:
+            category_dict[cat_id] = {'id':"CAT:%i" % cat_id,
                                           'bare_id': cat_id,
                                           #TODO: 'auxcounter': 0 ??
                                           'name': cat_name,
@@ -770,7 +770,7 @@ def getFeedTree(sid, **args): #TODO: include_empty
                                           'child_unread': 0,
                                           #TODO: 'param': '(1 feed)' ??
                                           }
-        category_dict[item.cat_id]['items'].append({'id': 'FEED:%i' % item.feed_id,
+        category_dict[cat_id]['items'].append({'id': 'FEED:%i' % item.feed_id,
                                                     'bare_id': item.feed_id,
                                                     #TODO: 'auxcounter': 0 ??
                                                     'name': item.feed_title,
@@ -808,10 +808,12 @@ def getFeedTree(sid, **args): #TODO: include_empty
                          'unread': 0,
                          'bare_id': -1,
                          }
+    items = [category_dict[category] for category in sorted(category_dict) if category != 0]
+    items.append(category_dict[0])
     content = { 'categories': {
                                'identifier': 'id',
                                'label': 'name',
-                               'items': [category_dict[category] for category in category_dict]
+                               'items': items
                                }
                }
     return content
