@@ -744,7 +744,7 @@ def getFeedTree(sid, **args): #TODO: include_empty
                FROM items
                LEFT JOIN feeds ON items.feed_id = feeds.feed_id
                LEFT JOIN categories ON categories.cat_id = feeds.cat_id
-               WHERE categories.user_id=$user_id
+               WHERE feeds.user_id=$user_id
                AND items.read IS NULL
                GROUP BY feeds.feed_id
                ORDER BY categories.cat_id ASC, feeds.feed_id ASC"""
@@ -752,11 +752,17 @@ def getFeedTree(sid, **args): #TODO: include_empty
 
     category_dict = {}
     for item in feeds:
+        if item.cat_id:
+            cat_id = item.cat_id
+            cat_name = item.name
+        else:
+            cat_id = 0
+            cat_name = "Uncategorised"
         if item.cat_id not in category_dict:
-            category_dict[item.cat_id] = {'id':"CAT:%i" % item.cat_id,
-                                          'bare_id': item.cat_id,
+            category_dict[item.cat_id] = {'id':"CAT:%i" % cat_id,
+                                          'bare_id': cat_id,
                                           #TODO: 'auxcounter': 0 ??
-                                          'name': item.name,
+                                          'name': cat_name,
                                           'items': [],
                                           #TODO: 'checkbox': False, ??
                                           'type': 'category',
