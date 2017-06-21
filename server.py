@@ -182,7 +182,7 @@ def article(row):
             'updated': row.updated.strftime('%s') if row.updated else 0,
             'title': row.title,
             'link': row.link,
-            'feed_title': row.feed_title,
+            'feed_title': row.feed_title if row.feed_title else row.url,
             #TODO: tags
             'excerpt': row.description if row.content else None,
             'content': row.content if row.content else row.description,
@@ -447,7 +447,7 @@ def getFeeds(sid, cat_id=None, offset=None, limit=None, unread_only=True, **args
             else:
                 lastupdate = None
             feeds.append({'feed_url': feed.url,
-                          'title': feed.feed_title,
+                          'title': feed.feed_title if feed.feed_title else feed.url,
                           'id': feed.feed_id,
                           'unread': feed.count_unread,
                           'has_icon': bool(feed.has_icon),
@@ -773,7 +773,7 @@ def getFeedTree(sid, **args): #TODO: include_empty
         category_dict[cat_id]['items'].append({'id': 'FEED:%i' % item.feed_id,
                                                     'bare_id': item.feed_id,
                                                     #TODO: 'auxcounter': 0 ??
-                                                    'name': item.feed_title,
+                                                    'name': item.feed_title if item.feed_title else item.url,
                                                     #TODO: 'checkbox': False, ??
                                                     'unread': 0,
                                                     'error': '',
