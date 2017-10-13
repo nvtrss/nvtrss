@@ -17,6 +17,7 @@ from lxml import etree
 from StringIO import StringIO
 from passlib.apps import custom_app_context as pwd_context
 from base64 import b64decode
+from markupsafe import escape
 
 version = "0.0.1"
 api_level = -1
@@ -176,6 +177,12 @@ def countunread(user_id, feed_id=None, uncategorised=False, fresh=False):
     return result
 
 def article(row):
+    description = row.get('description')
+    content = row.get('content')
+    if not content:
+        content = description
+    elif row.get('truncated', False):
+        content += "<p> <a href=\"%s\">Continue reading...</a>" % row.link
     return {'id': row.item_id,
             'feed_id': row.feed_id,
             'unread': not bool(row.read),
@@ -184,8 +191,8 @@ def article(row):
             'link': row.link,
             'feed_title': row.feed_title if row.feed_title else row.url,
             #TODO: tags
-            'excerpt': row.description if row.content else None,
-            'content': row.content if row.content else row.description,
+            'excerpt': escape(description),
+            'content': content
             }
 
 def checksubscribe(feed_url, user_id):
@@ -511,7 +518,11 @@ def getHeadlines(sid, feed_id=None, limit=None, view_mode=None, order_by=None, *
     #TODO: parameters: skip, is_cat, show_excerpt, show_content, view_mode
     #TODO: parameters: include_attachments, since_id, include_nested
     user_id = checksession(sid)
-    query = """select * from feeds,items """
+    query = """select items.item_id, feeds.feed_id, items.read, items.updated,
+                      items.title, items.link, feeds.feed_title, feeds.url,
+                      items.description, substr(items.content, 1, 2000) as content,
+                      items.content>2000 as truncated
+               from feeds,items """
     if dbconfig['dbn'] == 'sqlite':
         query += str(" indexed by idx_items_timestamps")
     query += str(""" where feeds.feed_id=items.feed_id
