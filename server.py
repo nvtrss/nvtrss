@@ -820,7 +820,8 @@ def getFeedTree(sid, **args): #TODO: include_empty
                          'bare_id': -1,
                          }
     items = [category_dict[category] for category in sorted(category_dict) if category != 0]
-    items.append(category_dict[0])
+    if 0 in category_dict:
+        items.append(category_dict[0])
     content = { 'categories': {
                                'identifier': 'id',
                                'label': 'name',
